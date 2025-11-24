@@ -6,8 +6,6 @@ import time
 # --- Configuration ---
 BASE_URL = "http://127.0.0.1:8000"
 QUERY_ENDPOINT = f"{BASE_URL}/api/tutor/query/"
-# NOTE: Replace 'test_audio.mp3' with a real, small audio file in your backend folder
-# Or use a placeholder file if you don't have one ready (though a real file is better)
 AUDIO_FILE_PATH = "test_audio.mp3" 
 
 def test_root_endpoint():
@@ -42,7 +40,7 @@ def test_query_endpoint():
         print(f"✅ Pipeline Success: Status {response.status_code} in {end_time - start_time:.2f}s")
         print("\n--- Pipeline Data Received ---")
         print(f"Query (Whisper Mock): {data.get('query')}")
-        print(f"Explanation (FLAN-T5): {data.get('explanation_text')[:60]}...")
+        print(f"Explanation (FLAN-T5): {data.get('explanation_text')}") 
         print(f"Lip-Sync JSON Mock: {data.get('lip_sync_json')}")
         print(f"Audio Stream URL: {data.get('audio_url')}")
         

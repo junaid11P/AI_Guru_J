@@ -33,7 +33,7 @@ async def handle_query(audio_file: UploadFile = File(...)):
     audio_bytes = await audio_file.read()
     # In a real app, you save the audio_bytes to a temporary file compatible with Whisper.
     # We will use a MOCK result for now to ensure the flow works:
-    user_query = "What is a for loop in Python?" # Mock result
+    user_query = "What is Python language in coding?" # Mock result
 
     logging.info(f"Received query: {user_query}")
 

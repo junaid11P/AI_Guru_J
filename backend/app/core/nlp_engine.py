@@ -5,7 +5,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 # --- Global Model Loading (Occurs on startup) ---
-# NOTE: Loading models can be memory intensive.
 try:
     logging.info("Loading FLAN-T5 model...")
     tokenizer = T5Tokenizer.from_pretrained(settings.NLP_MODEL_ID)
@@ -23,9 +22,21 @@ def get_ai_explanation(user_query: str) -> str:
 
     prompt = f"Explain this Python concept or code in a friendly tutor tone: {user_query}"
     
-    # Generate the response
+    # Generate the response with parameters optimized for completeness
     input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-    outputs = model.generate(input_ids, max_length=150, num_beams=5, early_stopping=True)
+    
+    # --- OPTIMIZED PARAMETERS FOR FORCING COMPLETE OUTPUT ---
+    outputs = model.generate(
+        input_ids, 
+        max_new_tokens=256,         # Max tokens to generate
+        min_length=128,             # CRITICAL: Forces the model to generate at least this many tokens
+        num_beams=1,
+        do_sample=True,             
+        temperature=0.7,            
+        top_k=50,
+        # 'early_stopping' is removed to avoid the warning and potential conflicts
+    )
+    # --------------------------------------------------------
     
     explanation = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return explanation
