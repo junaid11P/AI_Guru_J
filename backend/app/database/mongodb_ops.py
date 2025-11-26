@@ -40,9 +40,12 @@ def initialize_db(mongo_uri: Optional[str] = None, server_selection_ms: int = 50
         # quick ping to validate connectivity
         _client.admin.command("ping")
         
-        # Use the database specified in the URI, or default to 'ai_guru_j'
-        # This fixes the "No default database name defined" error by ensuring a fallback
-        _db = _client.get_default_database() or _client.get_database("ai_guru_j_db")
+        try:
+            _db = _client.get_default_database()
+        except Exception:
+            # If no database is defined in the URI, fall back to a specific name
+            _db = _client.get_database("ai_guru_j_db")
+        # --- FIX END ---
         
         _initialized = True
         logger.info("MongoDB client initialized for database: %s", _db.name)
