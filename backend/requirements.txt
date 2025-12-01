@@ -3,8 +3,11 @@ uvicorn[standard]
 python-multipart
 openai-whisper
 transformers
-gTTS
 pymongo[srv]
 pydantic
 pydantic-settings
-dnspython # Required for pymongo to handle mongodb+srv URI
+dnspython
+torch
+scipy
+google-generativeai
+edge-tts  

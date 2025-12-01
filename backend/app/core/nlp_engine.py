@@ -1,53 +1,57 @@
-from transformers import T5ForConditionalGeneration, T5TokenizerFast
-from .config import settings
 import logging
-import torch
+import re
+import google.generativeai as genai
+from .config import settings
 
 logging.basicConfig(level=logging.INFO)
 
-# --- Global Model Loading (Occurs on startup) ---
-device = "cuda" if torch.cuda.is_available() else "cpu"
+# 1. Configure the Google Gemini Client
 try:
-    logging.info("Loading FLAN-T5 model...")
-    tokenizer = T5TokenizerFast.from_pretrained(settings.NLP_MODEL_ID)
-    model = T5ForConditionalGeneration.from_pretrained(settings.NLP_MODEL_ID).to(device)
-    model.eval()
-    logging.info(f"FLAN-T5 model loaded successfully on {device}.")
+    genai.configure(api_key=settings.GEMINI_API_KEY)
+    model = genai.GenerativeModel(settings.NLP_MODEL_ID)
+    logging.info(f"Connected to Google Gemini API ({settings.NLP_MODEL_ID}).")
 except Exception as e:
-    logging.error(f"Error loading FLAN-T5: {e}")
-    tokenizer = None
+    logging.error(f"Error connecting to Google Gemini: {e}")
     model = None
 
-def get_ai_explanation(user_query: str) -> str:
-    """Generates a concise, high-quality explanation and a small Python example."""
-    if model is None or tokenizer is None:
-        return "Sorry, the AI model is not ready yet."
+def get_ai_explanation(user_query: str):
+    """
+    Generates Python code and explanation using Google Gemini 1.5 Flash.
+    """
+    if not model:
+        return "Error: Gemini API key is missing or invalid.", "# Check server logs."
 
+    # 2. Strict Prompting
     prompt = (
-        "You are a friendly tutor. Provide a concise explanation (<=200 words) of the concept below, "
-        "followed by a short Python code block that demonstrates the idea. "
-        "Return plain text with the code enclosed in triple backticks.\n\n"
-        f"Concept: {user_query}\n\nExplanation and example:"
+        f"You are an expert Python Tutor. \n"
+        f"Task: Write valid Python code to {user_query}. \n"
+        f"Rules:\n"
+        f"1. Provide the code inside a Markdown block: ```python ... ```\n"
+        f"2. Follow it with a concise, helpful explanation.\n"
+        f"3. Do not include 'Here is the code' filler text at the start."
     )
 
-    encoded = tokenizer(prompt, return_tensors="pt", truncation=True, padding=True, max_length=512)
-    input_ids = encoded.input_ids.to(device)
-    attention_mask = encoded.attention_mask.to(device)
+    try:
+        # 3. Generate Content
+        response = model.generate_content(prompt)
+        full_output = response.text
+        
+        # 4. Extract Code vs Text
+        code_pattern = r"```(?:python)?\s*(.*?)\s*```"
+        code_matches = re.findall(code_pattern, full_output, re.DOTALL)
+        
+        if code_matches:
+            # Join multiple code blocks if present
+            code_content = "\n\n".join(code_matches).strip()
+            # Remove the code from the main text to get the explanation
+            explanation_text = re.sub(code_pattern, "", full_output, flags=re.DOTALL).strip()
+        else:
+            # Fallback if no code block found
+            code_content = "# No specific code block detected.\n# See explanation."
+            explanation_text = full_output
 
-    # Use deterministic beam search for reliable, high-quality outputs
-    with torch.no_grad():
-        outputs = model.generate(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            max_new_tokens=256,
-            min_length=80,
-            num_beams=4,
-            do_sample=False,
-            early_stopping=True,
-            no_repeat_ngram_size=3,
-            repetition_penalty=1.2,
-            length_penalty=1.0
-        )
+        return explanation_text, code_content
 
-    explanation = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return explanation.strip()
+    except Exception as e:
+        logging.error(f"Gemini Generation Error: {e}")
+        return "I encountered an error connecting to Google AI.", f"# Error: {str(e)}"

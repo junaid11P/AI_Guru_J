@@ -1,15 +1,38 @@
-from gtts import gTTS
-import io
+import edge_tts
+import logging
+import tempfile
+import os
 
-def generate_speech(text_to_speak: str) -> io.BytesIO:
-    """Converts text to speech and returns the audio as an in-memory MP3 file stream."""
+logger = logging.getLogger(__name__)
+
+# Voice Mapping
+VOICES = {
+    "male": "en-US-ChristopherNeural", # Deep Male Voice
+    "female": "en-US-AriaNeural"       # Standard Female Voice
+}
+
+async def generate_speech(text_to_speak: str, gender: str = "female") -> str:
+    """
+    Generates speech using Microsoft Edge TTS.
+    Returns the PATH to a temporary .mp3 file.
+    """
     try:
-        tts = gTTS(text=text_to_speak, lang='en')
-        mp3_fp = io.BytesIO()
-        tts.write_to_fp(mp3_fp)
-        mp3_fp.seek(0) # Reset pointer for streaming
-        return mp3_fp
+        if not text_to_speak:
+            raise ValueError("No text provided for TTS")
+
+        # 1. Select voice based on gender
+        voice = VOICES.get(gender, VOICES["female"])
+        
+        # 2. Create a temp file to save the audio
+        fd, path = tempfile.mkstemp(suffix=".mp3")
+        os.close(fd) 
+
+        # 3. Generate Audio
+        communicate = edge_tts.Communicate(text_to_speak, voice)
+        await communicate.save(path)
+
+        return path
+
     except Exception as e:
-        print(f"Error generating speech: {e}")
-        # Return an empty buffer or handle error appropriately
-        return io.BytesIO()
+        logger.error(f"❌ Edge-TTS Error: {e}")
+        raise e
