@@ -36,7 +36,6 @@ export default function App() {
     // Adding timestamp (t=...) forces the browser to reload the audio even if the URL looks similar
     const newUrl = `http://127.0.0.1:8000/api/tutor/audio_stream/?text=${safeText}&gender=${teacher}&t=${Date.now()}`;
     
-    console.log("Generating Audio for:", teacher);
     setAudioUrl(newUrl);
 
   }, [teacher, explanation, loading]); 
@@ -53,7 +52,6 @@ export default function App() {
       });
 
       const data = resp.data;
-      console.log("Backend Response:", data);
 
       setUserQuery(data.user_query || "User Query"); 
       

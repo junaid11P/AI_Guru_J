@@ -56,7 +56,6 @@ export default function SearchBar({ onSubmit, loading, onStateChange }) {
       // --- THE TRIGGER PHRASE ---
       // We check for variations like "guru j", "guru jay", "guruji"
       if (transcript.includes("guru j") || transcript.includes("guru")) {
-        console.log("Wake Word Detected!");
         handleWakeWordTriggered();
       }
     };
@@ -134,23 +133,6 @@ export default function SearchBar({ onSubmit, loading, onStateChange }) {
              <div className="wake-pulse"></div>
         )}
       </button>
-
-      {/* Inline Style for the Pulse Animation */}
-      {/* Inline Style for the Pulse Animation */}
-      <style>{`
-        .wake-pulse {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            border-radius: 50%;
-            border: 2px solid rgba(16, 3, 28, 0.6);
-            animation: wakePulse 2s infinite;
-            pointer-events: none;
-        }
-        @keyframes wakePulse {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(1.5); opacity: 0; }
-        }
-      `}</style>
     </div>
   );
 }

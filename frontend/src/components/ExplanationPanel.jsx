@@ -2,7 +2,6 @@ import React from "react";
 import GlassCard from "./GlassCard";
 
 export default function ExplanationPanel({ explanation, userQuery }) {
-  // REMOVED: const headerIcon = <span className="panel-icon">🔊</span>;
 
   return (
     <GlassCard title="AI Explanation" className="explanation-panel">

@@ -476,3 +476,17 @@ body, html, #root {
     text-shadow: 0 0 10px rgba(255,255,255,0.8);
     border-bottom: 2px solid #fff;
 }
+
+/* Inline Style for the Pulse Animation */
+.wake-pulse {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 50%;
+            border: 2px solid rgba(16, 3, 28, 0.6);
+            animation: wakePulse 2s infinite;
+            pointer-events: none;
+        }
+        @keyframes wakePulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }

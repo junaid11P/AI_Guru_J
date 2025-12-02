@@ -64,7 +64,7 @@ export default function Contact() {
               href="https://www.youtube.com/@JunnuBlr" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="social-btn linkedin"
+              className="social-btn"
               style={{ background: "#FF0000" }}
             >
               YouTube
@@ -74,7 +74,7 @@ export default function Contact() {
               href="https://www.instagram.com/junaid11_" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="social-btn linkedin"
+              className="social-btn"
               style={{ background: "#C13584" }}
             >
               Instagram

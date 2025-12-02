@@ -47,7 +47,7 @@ function detectClip(actions, tags = []) {
 function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading }) {
   const head = useRef();
   
-  // 1. USE ORIGINAL SEPARATE FILES (Restored Old Logic)
+  // 1. USE ORIGINAL SEPARATE FILES
   const modelFile = teacher === "male" ? "male_teacher" : "female_teacher";
   const animFile = teacher === "male" ? "animations_male" : "animations_female"; 
 
