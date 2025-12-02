@@ -10,33 +10,31 @@ body, html, #root {
     overflow: hidden;
 
     /* --- BACKGROUND DESIGN: VIRTUAL HOLODECK --- */
-    background-color: #1e1b4b; /* Very dark purple base */
-    
+    background-color: #1e1b4b; /* Deep Indigo Base */
     background-image: 
         /* 1. The Grid (Thin, subtle tech lines) */
         linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-        
         /* 2. The Spotlight (Glow behind the avatar/board) */
-        radial-gradient(circle at 50% 40%, rgba(192, 132, 252, 0.8) 0%, rgba(124, 58, 237, 0.6) 40%, rgba(30, 27, 75, 1) 90%);
+        radial-gradient(circle at 50% 40%, rgba(139, 92, 246, 0.4) 0%, rgba(30, 27, 75, 0.8) 60%, rgba(15, 23, 42, 1) 100%);
 
-    /* Grid size (60px squares) and Gradient size (Full screen) */
-    background-size: 60px 60px, 60px 60px, 100% 100%;
-    
-    /* Ensure the background stays fixed if content moves */
+    /* Grid size and Gradient size */
+    background-size: 50px 50px, 50px 50px, 100% 100%;
     background-attachment: fixed;
 }
 
 /* --- Main Application Structure --- */
 .app-root {
+    /* FIX: Use dvh for mobile browsers (iPhone) */
     height: 100vh;
-    height: 100dvh; /* For mobile viewport compatibility */
+    height: 100dvh; 
     display: flex;
     flex-direction: column;
     position: relative;
+    overflow: hidden;
 }
 
-/* --- Top Navigation Menu (UPDATED) --- */
+/* --- Top Navigation Menu --- */
 .top-nav {
     position: absolute;
     top: 25px;
@@ -44,7 +42,7 @@ body, html, #root {
     z-index: 10;
     display: flex;
     align-items: center;
-    gap: 40px; /* Space between Logo and Links */
+    gap: 40px;
 }
 
 /* Logo Styles */
@@ -67,12 +65,9 @@ body, html, #root {
     color: #fff;
     text-transform: uppercase;
     letter-spacing: 1px;
-    /* 3D Text Effect */
     text-shadow: 
-        1px 1px 0px #5b21b6,
-        2px 2px 0px #4c1d95,
-        3px 3px 0px #2e1065,
-        4px 4px 6px rgba(0,0,0,0.4);
+        0 0 10px rgba(167, 139, 250, 0.8),
+        2px 2px 0px #4c1d95;
 }
 
 /* Links Container */
@@ -83,18 +78,16 @@ body, html, #root {
 
 .nav-item {
     text-decoration: none;
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255, 255, 255, 0.7);
     font-weight: 600;
     font-size: 16px;
     letter-spacing: 0.5px;
     transition: all 0.2s ease;
-    position: relative;
 }
 
-.nav-item:hover {
+.nav-item:hover, .nav-item.active {
     color: #fff;
     text-shadow: 0 0 12px rgba(255,255,255,0.6);
-    transform: translateY(-1px);
 }
 
 /* --- Top Right Teacher Selector --- */
@@ -105,35 +98,38 @@ body, html, #root {
     z-index: 10;
 }
 
-/* --- Main Content Area (Whiteboard + Avatar) --- */
+/* --- Main Content Area --- */
 .main-content-area {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px 40px 100px 40px;
+    padding: 20px 40px 100px 40px; /* Bottom padding creates space for bar */
     gap: 40px;
     position: relative;
     overflow: hidden;
 }
 
-/* --- Whiteboard Container --- */
+/* --- Whiteboard Container (The Board) --- */
 .whiteboard-container {
     flex: 2;
     max-width: 900px;
-/*  aspect-ratio: 16 / 9;  <-- REMOVE or OVERRIDE this strict rule */
-    background: #fdfdfd;
-    border: 12px solid #985309;
-    border-image: url("https://www.transparenttextures.com/patterns/wood.png") 90 round;
-    border-radius: 8px;
-    box-shadow: 
-        inset 0 0 20px rgba(0,0,0,0.1),
-        0 10px 30px rgba(0,0,0,0.3);
-    padding: 30px;
-    display: flex;
-    gap: 30px;
+    aspect-ratio: 16 / 9;
+    
+    /* FIX: Prevents Zooming/Cropping on small screens/DevTools */
     max-height: 100%;
     min-height: 0;
+
+    background: #f8fafc; /* Very light slate */
+    border: 8px solid #334155; /* Dark slate border */
+    border-radius: 12px;
+    box-shadow: 
+        0 0 0 4px #1e293b, /* Double border effect */
+        0 20px 50px rgba(0,0,0,0.5); /* Deep shadow */
+        
+    padding: 25px;
+    display: flex;
+    gap: 20px;
     align-items: flex-start;
     position: relative;
     z-index: 2;
@@ -152,7 +148,6 @@ body, html, #root {
      pointer-events: auto;
 }
 
-
 /* --- Panels inside Whiteboard --- */
 .wb-panel-left, .wb-panel-right {
     min-width: 0;
@@ -162,17 +157,22 @@ body, html, #root {
     flex-direction: column;
 }
 
-/* --- Glass/Card Styles --- */
+/* --- Glass/Card Styles (UPDATED) --- */
 .glass-panel {
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 12px;
+    /* Glass Effect */
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    
+    border-radius: 16px;
     padding: 20px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     height: 100%;
     display: flex;
     flex-direction: column;
-    max-width: 100%;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 .panel-header {
@@ -180,99 +180,87 @@ body, html, #root {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
-    color: #4a4a4a;
+    color: #334155;
     font-weight: 700;
-    font-size: 18px;
-}
-
-.panel-icon {
-    font-size: 24px;
-    color: #666;
-    cursor: pointer;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid rgba(0,0,0,0.05);
+    padding-bottom: 10px;
 }
 
 .panel-content {
     flex: 1;
     overflow-y: auto;
+    position: relative;
 }
-
 
 /* --- Code Panel Specifics (Dark Theme) --- */
-.code-panel-dark {
-    background: #1e1e1e !important;
-    color: #d4d4d4 !important;
-    font-family: 'Fira Code', monospace;
-    border: 1px solid #333;
-}
-.code-panel-dark .panel-header {
+.glass-panel.code-interpreter {
+    background: #1e1e1e !important; /* Force dark background */
+    border: 1px solid #444;
     color: #d4d4d4;
+    padding: 0; /* Remove padding for code editor look */
 }
-.code-content {
-    font-family: 'Fira Code', monospace;
-    font-size: 14px;
-    line-height: 1.5;
-    white-space: pre;
+
+/* Custom Scrollbar for Code */
+.code-content::-webkit-scrollbar {
+    width: 10px;
 }
-.line-num {
-    display: inline-block;
-    width: 35px;
-    color: #6e7681;
-    text-align: right;
-    margin-right: 15px;
-    user-select: none;
+.code-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+.code-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 5px;
+    border: 3px solid #1e1e1e; /* Padding hack */
 }
 
 /* --- Explanation Panel Specifics --- */
-.explanation-text {
+.explanation-content {
     font-size: 15px;
     line-height: 1.6;
-    color: #555;
+    color: #475569;
+}
+
+/* NEW: User Question Box */
+.user-query-box {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(236, 72, 153, 0.1));
+    border-left: 4px solid #a855f7;
+    padding: 16px;
+    border-radius: 0 12px 12px 0;
     margin-bottom: 20px;
 }
-.suggested-steps {
-    margin-top: auto;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
+
+.query-label {
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #a855f7;
+    font-weight: 800;
+    margin-bottom: 6px;
 }
-.suggested-steps p {
-    font-size: 12px;
+
+.query-text {
+    font-style: italic;
+    color: #333; 
     font-weight: 600;
-    color: #888;
-    margin-bottom: 10px;
-    letter-spacing: 0.5px;
-}
-.suggested-steps button {
-    width: 100%;
-    padding: 12px 15px;
-    background: #f9f9f9;
-    border: 1px solid #eee;
-    color: #444;
-    text-align: left;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.suggested-steps button:hover {
-    background: #f0f0f0;
-    border-color: #ddd;
 }
 
 
 /* --- Bottom UI Bar --- */
 .bottom-bar {
+    /* FIX: Fixed positioning keeps it visible on iPhone */
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
     height: 100px;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(255,255,255,0.3);
+    
+    background: rgba(30, 41, 59, 0.7); /* Darker semi-transparent slate */
+    backdrop-filter: blur(15px);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    
     display: flex;
     align-items: center;
     padding: 0 40px;
@@ -280,13 +268,10 @@ body, html, #root {
     z-index: 999;
 }
 
-.bottom-icon {
-    font-size: 32px;
-    color: rgba(255,255,255,0.6);
-}
 .bottom-icon.sparkle {
-    margin-left: auto; /* Push to far right */
-    color: rgba(255,255,255,0.8);
+    margin-left: auto;
+    color: #fbbf24;
+    font-size: 24px;
 }
 
 .text-input-container {
@@ -301,85 +286,96 @@ body, html, #root {
     width: 100%;
     padding: 15px 25px;
     border-radius: 30px;
-    border: none;
-    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
     font-size: 16px;
     outline: none;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    transition: background 0.2s;
 }
+.text-input-field:focus {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: rgba(168, 85, 247, 0.5);
+}
+.text-input-field::placeholder {
+    color: rgba(255,255,255,0.4);
+}
+
 .input-send-btn {
     position: absolute;
     right: 10px;
     background: none;
     border: none;
     font-size: 24px;
-    color: #8a6ae2;
+    color: #a855f7;
     cursor: pointer;
     padding: 5px;
 }
 
-
-/* --- SearchBar (Hold to Ask Button) --- */
+/* --- SearchBar (Mic Button) --- */
 .search-bar-container {
     flex-shrink: 0;
 }
 .mic-btn {
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
     border-radius: 50%;
-    border: none;
-    background: linear-gradient(135deg, #9f55e6, #6d28d9);
+    border: 2px solid rgba(255,255,255,0.1);
+    background: linear-gradient(135deg, #7c3aed, #4c1d95);
     color: #fff;
     font-weight: 700;
-    font-size: 14px;
-    line-height: 1.2;
+    font-size: 13px;
     cursor: pointer;
-    box-shadow: 0 8px 20px rgba(109, 40, 217, 0.4);
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
     transition: all 0.2s ease;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
+    position: relative;
+    z-index: 10;
 }
 .mic-btn:hover {
-     transform: translateY(-2px);
-     box-shadow: 0 10px 25px rgba(109, 40, 217, 0.5);
+     transform: scale(1.05);
+     box-shadow: 0 0 30px rgba(124, 58, 237, 0.5);
 }
 .mic-btn.recording {
-    background: linear-gradient(135deg, #ff5f6d, #ffc371);
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
     animation: pulse 1.5s infinite alternate;
 }
 @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(255, 95, 109, 0.5); }
-    100% { box-shadow: 0 0 0 15px rgba(255, 95, 109, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+    100% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
 }
-
 
 /* --- Teacher Selector Styles --- */
 .teacher-selector {
     display: flex;
     gap: 8px;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.3);
     padding: 6px 10px;
     border-radius: 20px;
     color: #fff;
+    border: 1px solid rgba(255,255,255,0.1);
 }
 .radio-label {
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 4px 12px;
     border-radius: 12px;
     transition: background 0.2s;
     display: flex;
     align-items: center;
     font-size: 14px;
+    font-weight: 600;
 }
 .radio-label input { display: none; }
 .radio-label.selected {
-    background: rgba(255, 255, 255, 0.3);
-    font-weight: 600;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
 }
-/* --- Contact Page Styles --- */
+
+/* --- Contact Page Overlay --- */
 .contact-overlay {
     flex: 1;
     display: flex;
@@ -389,14 +385,15 @@ body, html, #root {
     padding: 20px;
     z-index: 5;
 }
-
 .contact-card {
     width: 100%;
     max-width: 600px;
     height: auto;
     min-height: 400px;
     backdrop-filter: blur(20px); /* Stronger blur for contact */
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.95); /* Opaque for readability */
+    border-radius: 16px;
+    padding: 30px;
     animation: fadeIn 0.5s ease-out;
 }
 
