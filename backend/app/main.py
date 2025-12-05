@@ -13,7 +13,11 @@ from app.database import mongodb_ops
 
 from app.api.tutor_router import router as tutor_router
 import os
-print("DEBUG CHECK KEY:", os.getenv("GEMINI_API_KEY"))
+key = os.getenv("GEMINI_API_KEY")
+if key:
+    print(f"API Key loaded: {key[:4]}****")
+else:
+    print("API Key MISSING")
 
 app = FastAPI(
     title="AI Guru J Backend",
