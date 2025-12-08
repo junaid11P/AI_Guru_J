@@ -10,5 +10,4 @@ dnspython
 torch
 scipy
 google-generativeai
-edge-tts  
-ffmpeg-python
+edge-tts

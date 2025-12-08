@@ -8,6 +8,11 @@ import Contact from "./components/Contact";
 import axios from "axios";
 import "./index.css";
 
+// --- UPDATED: DYNAMIC API URL ---
+// If VITE_API_URL is set (Production), use it. Otherwise use localhost (Development).
+// Remove the trailing slash if it exists to avoid double slashes (//)
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+
 export default function App() {
   const [teacher, setTeacher] = useState("female");
   const [loading, setLoading] = useState(false);
@@ -22,22 +27,15 @@ export default function App() {
   const [audioUrl, setAudioUrl] = useState(null);
   const [lipSyncData, setLipSyncData] = useState(null);
 
-  // --- AUTO-UPDATE AUDIO WHEN TEACHER OR TEXT CHANGES ---
   useEffect(() => {
-    // 1. Don't play audio if loading, empty, or just "Thinking..."
     if (!explanation || loading || explanation === "Thinking...") {
         setAudioUrl(null);
         return;
     }
-
-    // 2. Construct the URL dynamically based on CURRENT teacher
-    // We use encodeURIComponent to make the text safe for a URL
     const safeText = encodeURIComponent(explanation);
-    // Adding timestamp (t=...) forces the browser to reload the audio even if the URL looks similar
-    const newUrl = `http://127.0.0.1:8000/api/tutor/audio_stream/?text=${safeText}&gender=${teacher}&t=${Date.now()}`;
-    
+    // UPDATED: Use API_BASE_URL here
+    const newUrl = `${API_BASE_URL}/api/tutor/audio_stream/?text=${safeText}&gender=${teacher}&t=${Date.now()}`;
     setAudioUrl(newUrl);
-
   }, [teacher, explanation, loading]); 
 
   async function sendToBackend(formData) {
@@ -47,15 +45,13 @@ export default function App() {
     setCodeData("# Generating code..."); 
 
     try {
-      const resp = await axios.post("http://127.0.0.1:8000/api/tutor/query/", formData, {
+      // UPDATED: Use API_BASE_URL here
+      const resp = await axios.post(`${API_BASE_URL}/api/tutor/query/`, formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
       const data = resp.data;
-
       setUserQuery(data.user_query || "User Query"); 
-      
-      // Setting explanation triggers the useEffect above to fetch audio
       setExplanation(data.explanation || "Here is the explanation.");
       
       const validCode = data.code && data.code.trim().length > 0 
@@ -139,7 +135,7 @@ export default function App() {
                     lipSyncData={lipSyncData} 
                     audioUrl={audioUrl}
                     isRecording={isRecording} 
-                    loading={loading} /* <--- PASSING LOADING STATE HERE */
+                    loading={loading}
                 />
             </div>
           </div>
