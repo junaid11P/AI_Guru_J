@@ -6,8 +6,8 @@ import os
 logger = logging.getLogger(__name__)
 
 VOICES = {
-    "male": "en-IN-PrabhatNeural",
-    "female": "en-IN-NeerjaNeural"
+    "male": "en-US-ChristopherNeural", 
+    "female": "en-US-AriaNeural"        
 }
 
 
@@ -22,6 +22,7 @@ async def generate_speech(text_to_speak: str, gender: str = "female") -> str:
 
         # 1. Select voice based on gender
         voice = VOICES.get(gender, VOICES["female"])
+        logger.info(f"🎤 Generating TTS for: '{text_to_speak[:30]}...' using voice: {voice}")
         
         # 2. Create a temp file to save the audio
         fd, path = tempfile.mkstemp(suffix=".mp3")
