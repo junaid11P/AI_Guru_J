@@ -8,10 +8,8 @@ from gtts import gTTS
 logger = logging.getLogger(__name__)
 
 # --- VOICE CONFIGURATION ---
-# Female: Google (Free, reliable)
-# Male: StreamElements (Free, famous Twitch voices)
-MALE_VOICE_ID = "Brian"  # "Brian" is the famous British male voice. 
-                         # Other options: "Justin" (US Male), "Russell" (AU Male)
+# "Brian" is the famous British male voice.
+MALE_VOICE_ID = "Brian"
 
 def clean_text_for_speech(text: str) -> str:
     """
@@ -27,18 +25,25 @@ def clean_text_for_speech(text: str) -> str:
 
 def generate_streamelements_audio(text: str, voice: str) -> str:
     """
-    Uses the free StreamElements API to generate Male audio.
+    Uses StreamElements with FAKE BROWSER HEADERS to bypass 401 errors.
     """
     try:
         url = f"https://api.streamelements.com/kappa/v2/speech?voice={voice}&text={text}"
-        response = requests.get(url, stream=True, timeout=10)
+        
+        # 1. THE FIX: Add a User-Agent header so we look like a real Chrome browser
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            "Referer": "https://streamelements.com/",
+            "Origin": "https://streamelements.com"
+        }
+        
+        # 2. Send request with headers
+        response = requests.get(url, headers=headers, stream=True, timeout=10)
         
         if response.status_code == 200:
-            # Create temp file
             fd, path = tempfile.mkstemp(suffix=".mp3")
             os.close(fd)
             
-            # Write audio chunks to file
             with open(path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=1024):
                     if chunk:
@@ -47,6 +52,7 @@ def generate_streamelements_audio(text: str, voice: str) -> str:
         else:
             logger.error(f"StreamElements API Error: {response.status_code}")
             return None
+            
     except Exception as e:
         logger.error(f"StreamElements Connection Failed: {e}")
         return None
@@ -55,7 +61,7 @@ async def generate_speech(text_to_speak: str, gender: str = "female") -> str:
     """
     Logic:
     - FEMALE: Use Google TTS (gTTS).
-    - MALE: Use StreamElements (Brian).
+    - MALE: Use StreamElements (Brian) with headers.
     """
     try:
         if not text_to_speak:
