@@ -8,3 +8,4 @@ dnspython
 google-generativeai
 gTTS 
 requests
+base64
