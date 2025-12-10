@@ -3,65 +3,73 @@ import tempfile
 import os
 import re
 import requests
+import base64
 from gtts import gTTS
 
 logger = logging.getLogger(__name__)
 
 # --- VOICE CONFIGURATION ---
-# "Brian" is the famous British male voice.
-MALE_VOICE_ID = "Brian"
+# TikTok Voice IDs
+# Male: en_us_006 (Male 1 - Very popular voice)
+# Female: en_us_001 (Female 1)
+TIKTOK_VOICES = {
+    "male": "en_us_006",
+    "female": "en_us_001"
+}
 
 def clean_text_for_speech(text: str) -> str:
-    """
-    Cleans text to prevent URL/API errors.
-    """
-    if not text: 
-        return ""
-    # Remove Markdown and Quotes
+    if not text: return ""
     text = re.sub(r"[*`_#\"']", "", text)
-    # Clean whitespace
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
-def generate_streamelements_audio(text: str, voice: str) -> str:
+def generate_tiktok_audio(text: str, voice: str) -> str:
     """
-    Uses StreamElements with FAKE BROWSER HEADERS to bypass 401 errors.
+    Connects to TikTok's TTS API directly.
     """
     try:
-        url = f"https://api.streamelements.com/kappa/v2/speech?voice={voice}&text={text}"
+        # TikTok API Endpoint (Publicly accessible via some wrappers, simplified here)
+        # Note: Direct TikTok API calls often require a session id or valid headers.
+        # If this fails, we will fall back to Google immediately.
         
-        # 1. THE FIX: Add a User-Agent header so we look like a real Chrome browser
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-            "Referer": "https://streamelements.com/",
-            "Origin": "https://streamelements.com"
+        # Using a reliable public proxy for TikTok TTS to avoid complex auth
+        # This is a common workaround for "free" access
+        url = "https://tiktok-tts.weilnet.workers.dev/api/generation"
+        
+        payload = {
+            "text": text,
+            "voice": voice
         }
         
-        # 2. Send request with headers
-        response = requests.get(url, headers=headers, stream=True, timeout=10)
+        response = requests.post(url, json=payload, timeout=15)
         
         if response.status_code == 200:
-            fd, path = tempfile.mkstemp(suffix=".mp3")
-            os.close(fd)
-            
-            with open(path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=1024):
-                    if chunk:
-                        f.write(chunk)
-            return path
+            data = response.json()
+            if data.get("data"):
+                # Decode base64 audio
+                audio_bytes = base64.b64decode(data["data"])
+                
+                fd, path = tempfile.mkstemp(suffix=".mp3")
+                os.close(fd)
+                
+                with open(path, 'wb') as f:
+                    f.write(audio_bytes)
+                return path
+            else:
+                logger.error(f"TikTok API Error: {data.get('error')}")
         else:
-            logger.error(f"StreamElements API Error: {response.status_code}")
-            return None
+            logger.error(f"TikTok HTTP Error: {response.status_code}")
             
     except Exception as e:
-        logger.error(f"StreamElements Connection Failed: {e}")
-        return None
+        logger.error(f"TikTok TTS Failed: {e}")
+    
+    return None
 
 async def generate_speech(text_to_speak: str, gender: str = "female") -> str:
     """
-    Logic:
-    - FEMALE: Use Google TTS (gTTS).
-    - MALE: Use StreamElements (Brian) with headers.
+    Strategy:
+    1. Try TikTok TTS (High Quality Male/Female).
+    2. Fallback to Google TTS (Reliable Female).
     """
     try:
         if not text_to_speak:
@@ -70,18 +78,17 @@ async def generate_speech(text_to_speak: str, gender: str = "female") -> str:
         clean_text = clean_text_for_speech(text_to_speak)
         logger.info(f"🎤 Synthesizing ({gender}): '{clean_text[:30]}...'")
 
-        # --- OPTION 1: MALE (StreamElements) ---
-        if gender == "male":
-            logger.info(f"🔵 Using StreamElements ({MALE_VOICE_ID})...")
-            path = generate_streamelements_audio(clean_text, MALE_VOICE_ID)
-            if path:
-                return path
-            else:
-                logger.warning("⚠️ StreamElements failed. Falling back to Google (Female).")
-
-        # --- OPTION 2: FEMALE (Google) ---
-        # Also serves as fallback if Male API fails
-        logger.info("🟢 Using Google TTS (Female)")
+        # --- OPTION 1: TikTok TTS (Male & Female) ---
+        tiktok_voice = TIKTOK_VOICES.get(gender, "en_us_001")
+        logger.info(f"🎵 Trying TikTok TTS ({tiktok_voice})...")
+        
+        path = generate_tiktok_audio(clean_text, tiktok_voice)
+        if path:
+            logger.info("✅ TikTok TTS Success")
+            return path
+        
+        # --- OPTION 2: Google TTS Fallback ---
+        logger.warning("⚠️ TikTok failed. Using Google TTS Backup.")
         
         fd, path = tempfile.mkstemp(suffix=".mp3")
         os.close(fd)
