@@ -6,5 +6,5 @@ pydantic
 pydantic-settings
 dnspython
 google-generativeai
-edge-tts
 gTTS 
+requests
