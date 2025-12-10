@@ -9,7 +9,14 @@ logger = logging.getLogger(__name__)
 
 # SWITCH TO ROBUST BRITISH VOICES (Often more reliable on Render)
 VOICES = {
-    "male": "en-GB-RyanNeural", 
+    "male": [
+        "en-IE-ConnorNeural",       # 1. Irish Male (Very Reliable)
+        "en-ZA-LukeNeural",         # 2. South African Male (Reliable)
+        "en-PH-JamesNeural",        # 3. Filipino Male
+        "en-GB-RyanNeural",         # 4. British Male
+        "en-US-ChristopherNeural",  # 5. US Male
+        "en-IN-PrabhatNeural"       # 6. Indian Male
+    ], 
     "female": "en-GB-SoniaNeural"
 }
 
