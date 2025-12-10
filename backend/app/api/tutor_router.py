@@ -3,12 +3,11 @@ from fastapi.responses import FileResponse
 import logging
 import shutil
 import os
-import random  # <--- Needed for random mouth shapes
-import whisper
+import random
 from urllib.parse import quote_plus
 from typing import Optional
 
-# Core imports
+# Core imports (Using Gemini 2.5 for Audio Analysis)
 from ..core.speech_synth import generate_speech
 from ..core.nlp_engine import get_ai_explanation
 from ..database.mongodb_ops import log_interaction
@@ -16,14 +15,12 @@ from ..database.mongodb_ops import log_interaction
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# --- LOAD WHISPER ---
-try:
-    whisper_model = whisper.load_model("base")
-except Exception as e:
-    logger.error(f"Failed to load Whisper: {e}")
+# Note: We removed the 'whisper_model' global variable to save RAM.
+# Gemini 2.5 Flash now handles the audio processing natively in the cloud.
 
 # --- UTILS ---
 def remove_file(path: str):
+    """Deletes a temporary file after use."""
     try:
         if os.path.exists(path):
             os.remove(path)
@@ -32,24 +29,23 @@ def remove_file(path: str):
 
 def mock_rhubarb_lipsync(text: str):
     """
-    Generates fake lip-sync data since we don't have the real Rhubarb tool running.
+    Generates fake lip-sync data (randomized but realistic-looking)
+    since we don't have the real Rhubarb binary in this environment.
     """
     if not text:
         return {"metadata": {"duration": 0}, "mouthCues": []}
 
-    # Estimate audio duration based on text length (approx 0.08s per char)
+    # Estimate duration: approx 0.10s per character
     duration = len(text) * 0.10
     cues = []
     current_time = 0.0
     
-    # Rhubarb shapes: A, B, C, D, E, F, G, H, X
+    # Standard Rhubarb shapes
     shapes = ["A", "B", "C", "D", "E", "F", "G", "H"] 
 
-    # Generate a random mouth shape every ~0.15 seconds
     while current_time < duration:
         shape = random.choice(shapes)
-        # Random duration for this shape (between 0.1s and 0.25s)
-        step = random.uniform(0.1, 0.25)
+        step = random.uniform(0.1, 0.25) # Random duration for realism
         
         end_time = min(current_time + step, duration)
         
@@ -58,10 +54,9 @@ def mock_rhubarb_lipsync(text: str):
             "end": round(end_time, 2),
             "value": shape
         })
-        
         current_time = end_time
 
-    # Ensure mouth closes at the end
+    # Always close mouth at the end
     cues.append({"start": round(current_time, 2), "end": round(current_time + 0.1, 2), "value": "X"})
 
     return {"metadata": {"duration": duration}, "mouthCues": cues}
@@ -74,51 +69,64 @@ async def handle_query(
     teacher_gender: str = Form("female")
 ):
     temp_filename = None
-    user_query = ""
+    user_query_for_log = ""
 
     try:
-        # 1. Process Input
+        explanation_text = ""
+        code_block = ""
+
+        # 1. PROCESS INPUT (Audio or Text)
         if audio_file:
+            # We save the audio to disk temporarily so Gemini can read it
             temp_filename = f"temp_{audio_file.filename}"
             with open(temp_filename, "wb") as buffer:
                 shutil.copyfileobj(audio_file.file, buffer)
-            result = whisper_model.transcribe(temp_filename, fp16=False)
-            user_query = result["text"].strip()
+            
+            user_query_for_log = "[Audio Input]"
+            
+            # CALL GEMINI 2.5 NATIVELY WITH AUDIO
+            # We pass is_audio=True so nlp_engine knows to upload the file
+            explanation_text, code_block = get_ai_explanation(temp_filename, is_audio=True)
+
         elif text_query:
-            user_query = text_query.strip()
+            user_query_for_log = text_query.strip()
+            # Standard Text Query
+            explanation_text, code_block = get_ai_explanation(user_query_for_log, is_audio=False)
+            
         else:
             raise HTTPException(status_code=400, detail="No input provided.")
 
-        # 2. AI Processing
-        explanation_text, code_block = get_ai_explanation(user_query)
-
-        # 3. Audio URL
+        # 2. GENERATE AUDIO URL (TTS)
         if explanation_text:
+            # We encode the text so it fits safely in a URL
             safe_text = quote_plus(explanation_text)
-            audio_url = f"http://127.0.0.1:8000/api/tutor/audio_stream/?text={safe_text}&gender={teacher_gender}"
+            # IMPORTANT: Use the FRONTEND_URL env var if available, or relative path
+            # But for simple interaction, we return the full backend URL path
+            base_url = os.getenv("RENDER_EXTERNAL_URL", "http://127.0.0.1:8000")
+            audio_url = f"{base_url}/api/tutor/audio_stream/?text={safe_text}&gender={teacher_gender}"
         else:
             audio_url = None
-            explanation_text = "I couldn't generate an answer."
+            explanation_text = "I'm sorry, I couldn't process that request."
 
-        # 4. GENERATE LIP SYNC DATA (The Fix!)
-        # We now call the function instead of returning an empty list
+        # 3. GENERATE LIP SYNC
         lip_sync_data = mock_rhubarb_lipsync(explanation_text)
 
-        # 5. Log
-        log_interaction(user_query, explanation_text, code_block, lip_sync_data, audio_url)
+        # 4. LOG INTERACTION (Async safe)
+        log_interaction(user_query_for_log, explanation_text, code_block, lip_sync_data, audio_url)
 
         return {
-            "user_query": user_query,
+            "user_query": user_query_for_log, # We return this so the UI can show something
             "explanation": explanation_text,
             "code": code_block,
-            "lip_sync": lip_sync_data, # Frontend receives this now!
+            "lip_sync": lip_sync_data,
             "audio_url": audio_url
         }
 
     except Exception as e:
-        logger.error(f"Error: {e}")
+        logger.error(f"Error processing query: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
+        # Cleanup audio file to free up disk space
         if temp_filename and os.path.exists(temp_filename):
             os.remove(temp_filename)
 
@@ -129,9 +137,13 @@ async def stream_audio(
     background_tasks: BackgroundTasks = None
 ):
     try:
+        # Generate the MP3 file using Edge TTS
         file_path = await generate_speech(text, gender)
+        
+        # Schedule file deletion after the response is sent
         if background_tasks:
             background_tasks.add_task(remove_file, file_path)
+            
         return FileResponse(file_path, media_type="audio/mpeg", filename="speech.mp3")
     except Exception as e:
         logger.error(f"TTS Error: {e}")

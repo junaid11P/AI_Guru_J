@@ -1,13 +1,9 @@
 fastapi
 uvicorn[standard]
 python-multipart
-openai-whisper
-transformers
 pymongo
 pydantic
 pydantic-settings
 dnspython
-torch
-scipy
 google-generativeai
 edge-tts
