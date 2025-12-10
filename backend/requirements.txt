@@ -7,4 +7,4 @@ pydantic-settings
 dnspython
 google-generativeai
 edge-tts
-gTTS  <-- ADD THIS LINE
+gTTS 
