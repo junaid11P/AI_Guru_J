@@ -7,35 +7,46 @@ from gtts import gTTS
 
 logger = logging.getLogger(__name__)
 
-# --- VOICE CONFIGURATION ---
-# We now have a LIST of voices for each gender.
-# Priority: 1. Indian (Theme accurate) -> 2. US (Reliable)
+# --- EXPANDED VOICE LIST (The Fix) ---
+# It will try these one by one. If Prabhat fails, it tries Christopher, then Ryan, etc.
 VOICES = {
-    "male": ["en-IN-PrabhatNeural", "en-US-ChristopherNeural"], 
-    "female": ["en-IN-NeerjaNeural", "en-US-AriaNeural"]
+    "male": [
+        "en-IN-PrabhatNeural",      # 1. Indian Male (Best for Guru J)
+        "en-US-ChristopherNeural",  # 2. US Male (Robust)
+        "en-GB-RyanNeural",         # 3. UK Male (Very Reliable)
+        "en-AU-WilliamNeural",      # 4. Australian Male
+        "en-CA-LiamNeural"          # 5. Canadian Male
+    ],
+    "female": [
+        "en-IN-NeerjaNeural",       # 1. Indian Female
+        "en-US-AriaNeural",         # 2. US Female
+        "en-GB-SoniaNeural",        # 3. UK Female
+        "en-AU-NatashaNeural"       # 4. Australian Female
+    ]
 }
 
 def clean_text_for_speech(text: str) -> str:
     """
-    Aggressively cleans text to prevent TTS crashes.
+    Cleans text to prevent crashes (removes quotes, stars, etc.)
     """
     if not text: 
         return ""
     
-    # 1. Remove Markdown (*bold*, `code`, # headers)
+    # Remove Markdown (*bold*, `code`, # headers)
     text = re.sub(r"[*`_#]", "", text)
     
-    # 2. Remove Quotes (Single and Double) - Common crash cause!
+    # Remove Quotes (Single and Double) - Common crash cause!
     text = text.replace('"', '').replace("'", "")
     
-    # 3. Clean whitespace (newlines become spaces)
+    # Clean whitespace
     text = re.sub(r"\s+", " ", text).strip()
     
     return text
 
 async def generate_speech(text_to_speak: str, gender: str = "female") -> str:
     """
-    Tries multiple Edge TTS voices. If ALL fail, falls back to Google TTS.
+    Multi-Voice Retry Strategy:
+    Tries 5 different Edge voices before giving up and using Google.
     """
     try:
         if not text_to_speak:
@@ -48,32 +59,26 @@ async def generate_speech(text_to_speak: str, gender: str = "female") -> str:
         fd, path = tempfile.mkstemp(suffix=".mp3")
         os.close(fd)
 
-        # Get the list of voices for the requested gender
-        # Default to female list if gender key is missing
+        # Get candidate voices
         candidate_voices = VOICES.get(gender, VOICES["female"])
 
-        # --- ATTEMPT 1 & 2: Try Edge TTS Voices in order ---
+        # --- ATTEMPT: Try Edge TTS Voices in Order ---
         for voice in candidate_voices:
             try:
-                logger.info(f"👉 Trying Voice: {voice}")
+                # logger.info(f"👉 Trying Voice: {voice}") # Optional debug log
                 communicate = edge_tts.Communicate(clean_text, voice)
                 await communicate.save(path)
 
                 if os.path.getsize(path) > 0:
                     logger.info(f"✅ Success with {voice}")
-                    return path # Exit function with success
+                    return path # RETURN IMMEDIATELY ON SUCCESS
                 
-                logger.warning(f"⚠️ Voice {voice} produced empty file.")
-
             except Exception as e:
-                logger.warning(f"⚠️ Voice {voice} failed: {e}")
-                # Loop continues to the next voice...
+                logger.warning(f"⚠️ Voice {voice} failed. Trying next...")
+                # Continue loop to next voice
 
-        # --- ATTEMPT 3: GOOGLE TTS (Last Resort) ---
-        # If we reach here, ALL Edge voices failed.
-        logger.error("❌ All Edge Voices failed. Switching to Google TTS (Female).")
-        
-        # gTTS only supports one voice per language (usually Female)
+        # --- FALLBACK: GOOGLE TTS (Last Resort - Female Only) ---
+        logger.error(f"❌ All {len(candidate_voices)} Edge voices failed. Using Google Backup.")
         tts = gTTS(text=clean_text, lang='en', slow=False)
         tts.save(path)
         return path
