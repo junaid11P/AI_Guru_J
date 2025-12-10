@@ -7,76 +7,77 @@ from gtts import gTTS
 
 logger = logging.getLogger(__name__)
 
-# SWITCH TO ROBUST BRITISH VOICES (Often more reliable on Render)
+# --- VOICE CONFIGURATION ---
+# We now have a LIST of voices for each gender.
+# Priority: 1. Indian (Theme accurate) -> 2. US (Reliable)
 VOICES = {
-    "male": "en-GB-RyanNeural", 
-    "female": "en-GB-SoniaNeural"
+    "male": ["en-IN-PrabhatNeural", "en-US-ChristopherNeural"], 
+    "female": ["en-IN-NeerjaNeural", "en-US-AriaNeural"]
 }
 
 def clean_text_for_speech(text: str) -> str:
     """
     Aggressively cleans text to prevent TTS crashes.
-    Removes Markdown, quotes, special chars, and newlines.
     """
     if not text: 
         return ""
     
-    # 1. Remove Markdown (bold, code blocks, etc.)
+    # 1. Remove Markdown (*bold*, `code`, # headers)
     text = re.sub(r"[*`_#]", "", text)
     
     # 2. Remove Quotes (Single and Double) - Common crash cause!
     text = text.replace('"', '').replace("'", "")
     
-    # 3. Replace newlines with spaces to keep flow
-    text = text.replace('\n', ' ')
-    
-    # 4. Collapse multiple spaces
+    # 3. Clean whitespace (newlines become spaces)
     text = re.sub(r"\s+", " ", text).strip()
     
     return text
 
 async def generate_speech(text_to_speak: str, gender: str = "female") -> str:
     """
-    Generates speech, favoring Edge TTS (Male/Female support).
-    Falls back to Google TTS (Female only) if Edge fails.
+    Tries multiple Edge TTS voices. If ALL fail, falls back to Google TTS.
     """
     try:
-        # 1. Safety Check & Cleaning
         if not text_to_speak:
             raise ValueError("Empty text provided")
             
         clean_text = clean_text_for_speech(text_to_speak)
-        
-        # Log what we are sending (first 50 chars)
-        logger.info(f"🎤 Synthesizing ({gender}): '{clean_text[:50]}...'")
+        logger.info(f"🎤 Synthesizing ({gender}): '{clean_text[:30]}...'")
 
-        # 2. Create Temp File
+        # Create Temp File
         fd, path = tempfile.mkstemp(suffix=".mp3")
         os.close(fd)
 
-        # --- PRIMARY: EDGE TTS (Supports Male) ---
-        try:
-            voice = VOICES.get(gender, VOICES["female"])
-            communicate = edge_tts.Communicate(clean_text, voice)
-            await communicate.save(path)
+        # Get the list of voices for the requested gender
+        # Default to female list if gender key is missing
+        candidate_voices = VOICES.get(gender, VOICES["female"])
 
-            if os.path.getsize(path) > 0:
-                return path
-            else:
-                logger.warning("⚠️ Edge TTS file was empty.")
+        # --- ATTEMPT 1 & 2: Try Edge TTS Voices in order ---
+        for voice in candidate_voices:
+            try:
+                logger.info(f"👉 Trying Voice: {voice}")
+                communicate = edge_tts.Communicate(clean_text, voice)
+                await communicate.save(path)
 
-        except Exception as e:
-            logger.error(f"⚠️ Edge TTS Failed: {e}")
+                if os.path.getsize(path) > 0:
+                    logger.info(f"✅ Success with {voice}")
+                    return path # Exit function with success
+                
+                logger.warning(f"⚠️ Voice {voice} produced empty file.")
 
-        # --- FALLBACK: GOOGLE TTS (Female Only) ---
-        # We only reach here if Edge TTS failed.
-        logger.info("🔄 Switching to Backup Google TTS (Female Only)...")
+            except Exception as e:
+                logger.warning(f"⚠️ Voice {voice} failed: {e}")
+                # Loop continues to the next voice...
+
+        # --- ATTEMPT 3: GOOGLE TTS (Last Resort) ---
+        # If we reach here, ALL Edge voices failed.
+        logger.error("❌ All Edge Voices failed. Switching to Google TTS (Female).")
         
-        # Note: gTTS does not support male voices.
+        # gTTS only supports one voice per language (usually Female)
         tts = gTTS(text=clean_text, lang='en', slow=False)
         tts.save(path)
         return path
 
     except Exception as e:
-        logger.critical(f"❌ ALL TTS ENGINES FAILED: {e}")
+        logger.critical(f"💀 CRITICAL TTS ERROR: {e}")
         raise e
