@@ -7,16 +7,13 @@ import random
 from urllib.parse import quote_plus
 from typing import Optional
 
-# Core imports (Using Gemini 2.5 for Audio Analysis)
+# Core imports
 from ..core.speech_synth import generate_speech
 from ..core.nlp_engine import get_ai_explanation
 from ..database.mongodb_ops import log_interaction
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-# Note: We removed the 'whisper_model' global variable to save RAM.
-# Gemini 2.5 Flash now handles the audio processing natively in the cloud.
 
 # --- UTILS ---
 def remove_file(path: str):
@@ -30,7 +27,7 @@ def remove_file(path: str):
 def mock_rhubarb_lipsync(text: str):
     """
     Generates fake lip-sync data (randomized but realistic-looking)
-    since we don't have the real Rhubarb binary in this environment.
+    for the 3D Avatar.
     """
     if not text:
         return {"metadata": {"duration": 0}, "mouthCues": []}
@@ -64,6 +61,7 @@ def mock_rhubarb_lipsync(text: str):
 # --- ROUTES ---
 @router.post("/query/")
 async def handle_query(
+    background_tasks: BackgroundTasks,  # <--- Added for non-blocking logging
     audio_file: Optional[UploadFile] = File(None),
     text_query: Optional[str] = Form(None),
     teacher_gender: str = Form("female")
@@ -98,10 +96,8 @@ async def handle_query(
 
         # 2. GENERATE AUDIO URL (TTS)
         if explanation_text:
-            # We encode the text so it fits safely in a URL
             safe_text = quote_plus(explanation_text)
-            # IMPORTANT: Use the FRONTEND_URL env var if available, or relative path
-            # But for simple interaction, we return the full backend URL path
+            # Use environment variable for URL if available, else standard relative path
             base_url = os.getenv("RENDER_EXTERNAL_URL", "http://127.0.0.1:8000")
             audio_url = f"{base_url}/api/tutor/audio_stream/?text={safe_text}&gender={teacher_gender}"
         else:
@@ -111,11 +107,19 @@ async def handle_query(
         # 3. GENERATE LIP SYNC
         lip_sync_data = mock_rhubarb_lipsync(explanation_text)
 
-        # 4. LOG INTERACTION (Async safe)
-        log_interaction(user_query_for_log, explanation_text, code_block, lip_sync_data, audio_url)
+        # 4. LOG INTERACTION (BACKGROUND TASK)
+        # This runs AFTER the response is sent, speeding up the UI significantly.
+        background_tasks.add_task(
+            log_interaction, 
+            user_query_for_log, 
+            explanation_text, 
+            code_block, 
+            lip_sync_data, 
+            audio_url
+        )
 
         return {
-            "user_query": user_query_for_log, # We return this so the UI can show something
+            "user_query": user_query_for_log,
             "explanation": explanation_text,
             "code": code_block,
             "lip_sync": lip_sync_data,
@@ -126,7 +130,7 @@ async def handle_query(
         logger.error(f"Error processing query: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        # Cleanup audio file to free up disk space
+        # Cleanup audio file to free up disk space immediately
         if temp_filename and os.path.exists(temp_filename):
             os.remove(temp_filename)
 
@@ -137,7 +141,7 @@ async def stream_audio(
     background_tasks: BackgroundTasks = None
 ):
     try:
-        # Generate the MP3 file using Edge TTS
+        # Generate the MP3 file using Edge TTS (or backup)
         file_path = await generate_speech(text, gender)
         
         # Schedule file deletion after the response is sent
