@@ -1,31 +1,25 @@
 import logging
 import re
+import ollama
+from groq import Groq
 import os
-import google.generativeai as genai
 from .config import settings
 
 logging.basicConfig(level=logging.INFO)
 
-# Configure Gemini 2.5 Flash
-try:
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-    # Gemini 2.5 Flash supports native audio!
-    model = genai.GenerativeModel(settings.NLP_MODEL_ID) 
-    logging.info(f"Connected to {settings.NLP_MODEL_ID} with Native Audio.")
-except Exception as e:
-    logging.error(f"Error connecting to Gemini: {e}")
-    model = None
+# Configuration
+OLLAMA_MODEL = "llama3.2" 
+GROQ_MODEL = "llama3-8b-8192" # Free, equivalent to llama3.2 roughly
 
 def get_ai_explanation(user_input, is_audio=False):
     """
-    Accepts either Text (str) or a File Path (audio) and generates a response.
+    Accepts Text (str).
+    Routes to Ollama (Local) or Groq (Cloud) based on config.
     """
-    if not model:
-        return "Error: Gemini API key is missing.", "# Check logs."
-
+    
     prompt_text = (
         "You are an expert Python Tutor. "
-        "The user will ask a question (in text or audio). "
+        f"The user will ask a question: '{user_input}'. "
         "Task: Write valid Python code to solve it. "
         "Rules:\n"
         "1. Provide code inside a Markdown block: ```python ... ```\n"
@@ -34,21 +28,34 @@ def get_ai_explanation(user_input, is_audio=False):
     )
 
     try:
-        content_payload = [prompt_text]
+        if settings.LLM_PROVIDER == "groq":
+            if not settings.GROQ_API_KEY:
+                return "Config Error: GROQ_API_KEY is missing.", "# Please check .env or Render settings."
+            
+            logging.info(f"Sending query to Groq Cloud ({GROQ_MODEL})...")
+            client = Groq(api_key=settings.GROQ_API_KEY)
+            
+            completion = client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt_text,
+                    }
+                ],
+                model=GROQ_MODEL,
+            )
+            full_output = completion.choices[0].message.content
 
-        if is_audio and user_input:
-            # Upload audio file to Gemini (File API)
-            # Gemini 2.5 processes audio natively!
-            audio_file = genai.upload_file(path=user_input, mime_type="audio/mp3")
-            content_payload.append(audio_file)
-            logging.info("Audio uploaded to Gemini 2.5 Flash.")
         else:
-            # Just text
-            content_payload.append(f"User Question: {user_input}")
-
-        # Generate!
-        response = model.generate_content(content_payload)
-        full_output = response.text
+            # Default to Ollama
+            logging.info(f"Sending query to Local Ollama ({OLLAMA_MODEL})...")
+            response = ollama.chat(model=OLLAMA_MODEL, messages=[
+                {
+                    'role': 'user',
+                    'content': prompt_text,
+                },
+            ])
+            full_output = response['message']['content']
         
         # Cleanup: Code Extraction Regex
         code_pattern = r"```(?:python)?\s*(.*?)\s*```"
@@ -64,5 +71,9 @@ def get_ai_explanation(user_input, is_audio=False):
         return explanation_text, code_content
 
     except Exception as e:
-        logging.error(f"Gemini Generation Error: {e}")
-        return "I encountered an error.", f"# Error: {str(e)}"
+        provider = settings.LLM_PROVIDER.upper()
+        logging.error(f"{provider} Generation Error: {e}")
+        error_msg = str(e)
+        if "connection refused" in error_msg.lower() and provider == "OLLAMA":
+             return "Error: Could not connect to Ollama.", "# Please make sure Ollama is running (`ollama run llama3.2`)."
+        return f"I encountered an error with {provider}.", f"# Error: {str(e)}"

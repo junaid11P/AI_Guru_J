@@ -62,33 +62,19 @@ def mock_rhubarb_lipsync(text: str):
 @router.post("/query/")
 async def handle_query(
     background_tasks: BackgroundTasks,  # <--- Added for non-blocking logging
-    audio_file: Optional[UploadFile] = File(None),
     text_query: Optional[str] = Form(None),
     teacher_gender: str = Form("female")
 ):
-    temp_filename = None
     user_query_for_log = ""
 
     try:
         explanation_text = ""
         code_block = ""
 
-        # 1. PROCESS INPUT (Audio or Text)
-        if audio_file:
-            # We save the audio to disk temporarily so Gemini can read it
-            temp_filename = f"temp_{audio_file.filename}"
-            with open(temp_filename, "wb") as buffer:
-                shutil.copyfileobj(audio_file.file, buffer)
-            
-            user_query_for_log = "[Audio Input]"
-            
-            # CALL GEMINI 2.5 NATIVELY WITH AUDIO
-            # We pass is_audio=True so nlp_engine knows to upload the file
-            explanation_text, code_block = get_ai_explanation(temp_filename, is_audio=True)
-
-        elif text_query:
+        # 1. PROCESS INPUT (Text Only now, as Frontend handles STT)
+        if text_query:
             user_query_for_log = text_query.strip()
-            # Standard Text Query
+            # Standard Text Query (or Transcribed Text)
             explanation_text, code_block = get_ai_explanation(user_query_for_log, is_audio=False)
             
         else:
@@ -129,10 +115,6 @@ async def handle_query(
     except Exception as e:
         logger.error(f"Error processing query: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        # Cleanup audio file to free up disk space immediately
-        if temp_filename and os.path.exists(temp_filename):
-            os.remove(temp_filename)
 
 @router.get("/audio_stream/")
 async def stream_audio(

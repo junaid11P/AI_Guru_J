@@ -1,136 +1,99 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useReactMediaRecorder } from "react-media-recorder-2";
 
 export default function SearchBar({ onSubmit, loading, onStateChange }) {
-  const [wakeWordActive, setWakeWordActive] = useState(true);
+  const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
 
-  // --- 1. SETUP MEDIA RECORDER (Your existing logic) ---
-  const { status, startRecording, stopRecording } = useReactMediaRecorder({
-    audio: true,
-    onStop: (blobUrl, blob) => {
-      // Pass the raw audio blob to App.jsx
-      if (blob) {
-        onSubmit(blob);
-      }
-      // After processing, restart wake word listener (after a small delay)
-      setTimeout(() => setWakeWordActive(true), 2000);
-    }
-  });
-
-  const isRecording = status === "recording";
-
-  // --- 2. NOTIFY APP OF STATE CHANGE ---
+  // --- REPORT STATE CHANGE ---
   useEffect(() => {
-    if (onStateChange) {
-      onStateChange(isRecording);
-    }
-  }, [isRecording, onStateChange]);
+    if (onStateChange) onStateChange(isListening);
+  }, [isListening, onStateChange]);
 
-  // --- 3. WAKE WORD DETECTION LOGIC ---
+  // --- INITIALIZE SPEECH RECOGNITION ---
   useEffect(() => {
-    // Check browser support
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
     if (!SpeechRecognition) {
       console.warn("Browser does not support Speech Recognition.");
       return;
     }
 
-    // Initialize Recognition
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true; 
+    recognition.continuous = false; // We want one sentence/query at a time
+    recognition.interimResults = true;
     recognition.lang = "en-US";
 
-    recognition.onresult = (event) => {
-      // If we are already recording or loading, ignore speech
-      if (isRecording || loading) return;
+    recognition.onstart = () => setIsListening(true);
 
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.onresult = (event) => {
       const transcript = Array.from(event.results)
         .map((result) => result[0])
         .map((result) => result.transcript)
-        .join("")
-        .toLowerCase();
+        .join("");
 
-      // --- THE TRIGGER PHRASE ---
-      // We check for variations like "guru j", "guru jay", "guruji"
-      if (transcript.includes("guru j") || transcript.includes("guru")) {
-        handleWakeWordTriggered();
+      // Ensure we get the final result
+      if (event.results[0].isFinal) {
+        // If the user says something valid, submit it
+        if (transcript.trim().length > 0) {
+          onSubmit(transcript);
+        }
       }
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech Recognition Error", event.error);
+      setIsListening(false);
     };
 
     recognitionRef.current = recognition;
+  }, [onSubmit]);
 
-    if (wakeWordActive && !isRecording && !loading) {
-      try {
-        recognition.start();
-      } catch (e) {
-        // Recognition already started
-      }
+  const toggleListening = () => {
+    if (loading) return;
+
+    if (isListening) {
+      recognitionRef.current.stop();
     } else {
-      recognition.stop();
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        console.error("Could not start recognition:", e);
+      }
     }
-
-    return () => {
-      recognition.stop();
-    };
-  }, [wakeWordActive, isRecording, loading]); // Re-run if states change
-
-  // --- 4. HANDLER: WHEN WAKE WORD IS HEARD ---
-  const handleWakeWordTriggered = () => {
-    // 1. Stop the wake listener so it doesn't conflict with the recorder
-    setWakeWordActive(false);
-    if(recognitionRef.current) recognitionRef.current.stop();
-
-    // 2. Start the actual audio recording
-    startRecording();
-
-    // 3. AUTO-STOP LOGIC (Siri Style)
-    // Automatically stop recording after 5 seconds to process the query
-    setTimeout(() => {
-      stopRecording();
-    }, 10000); 
   };
 
   return (
     <div className="search-bar" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-      
-      {/* Visual Indicator for Wake Word */}
-      {wakeWordActive && !loading && !isRecording && (
-        <div style={{ 
-            fontSize: '10px', 
-            color: 'rgba(255,255,255,0.7)', 
-            background: 'rgba(0,0,0,0.2)', 
-            padding: '4px 12px', 
-            borderRadius: '10px',
-            marginBottom: '-10px',
-            zIndex: 5
+
+      {/* Helper Text */}
+      {!isListening && !loading && (
+        <div style={{
+          fontSize: '10px',
+          color: 'rgba(255,255,255,0.7)',
+          background: 'rgba(0,0,0,0.2)',
+          padding: '4px 12px',
+          borderRadius: '10px',
+          marginBottom: '-10px',
+          zIndex: 5
         }}>
-           Tap or say "Guru J"...
+          Tap to Speak...
         </div>
       )}
 
       <button
-        onMouseDown={startRecording}
-        onMouseUp={stopRecording}
-        onTouchStart={startRecording}
-        onTouchEnd={stopRecording}
-        className={`mic-btn ${isRecording ? "recording" : ""}`}
+        onClick={toggleListening}
+        className={`mic-btn ${isListening ? "recording" : ""}`}
         disabled={loading}
         style={{ position: 'relative' }}
       >
-        {loading? "Thinking...": isRecording? "Listening...":
-        (
-        <>
-          Hold <br /> to Ask <br />
-        </>
-        )
-        }
-            
-        {/* Visual Pulse ring when Wake Word is active but not recording */}
-        {wakeWordActive && !isRecording && !loading && (
-             <div className="wake-pulse"></div>
+        {loading ? "Thinking..." : isListening ? "Listening..." : "🎙️"}
+
+        {/* Visual Pulse ring when listening */}
+        {isListening && !loading && (
+          <div className="wake-pulse"></div>
         )}
       </button>
     </div>

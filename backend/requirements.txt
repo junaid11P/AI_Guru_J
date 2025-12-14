@@ -5,6 +5,6 @@ pymongo
 pydantic
 pydantic-settings
 dnspython
-google-generativeai
+ollama
 gTTS 
-requests
+groq

@@ -10,8 +10,6 @@ logger = logging.getLogger(__name__)
 
 # --- VOICE CONFIGURATION ---
 # TikTok Voice IDs
-# Male: en_us_006 (Male 1 - Very popular voice)
-# Female: en_us_001 (Female 1)
 TIKTOK_VOICES = {
     "male": "en_us_006",
     "female": "en_us_001"
@@ -28,11 +26,6 @@ def generate_tiktok_audio(text: str, voice: str) -> str:
     Connects to TikTok's TTS API directly.
     """
     try:
-        # TikTok API Endpoint (Publicly accessible via some wrappers, simplified here)
-        # Note: Direct TikTok API calls often require a session id or valid headers.
-        # If this fails, we will fall back to Google immediately.
-        
-        # Using a reliable public proxy for TikTok TTS to avoid complex auth
         # This is a common workaround for "free" access
         url = "https://tiktok-tts.weilnet.workers.dev/api/generation"
         
