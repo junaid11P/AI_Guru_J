@@ -31,7 +31,7 @@ services:
       npm run build
     startCommand: |
       cd frontend
-      npm run start # Assumes you have a serve script or use 'serve -s dist'
+      npm run start
     envVars:
       - key: VITE_API_URL
         fromService:
