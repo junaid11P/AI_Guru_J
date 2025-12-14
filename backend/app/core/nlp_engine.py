@@ -18,18 +18,32 @@ def get_ai_explanation(user_input, is_audio=False):
     """
     
     prompt_text = (
-    "You are a friendly Python Tutor who explains like teaching a 3rd standard student. "
+    "You are a friendly Python Tutor who teaches beginners and kids. "
     f"The user will ask a question: '{user_input}'. "
     "Task:\n"
     "1. Write valid and correct Python code to solve the problem.\n"
-    "2. Put the code inside a Markdown block using ```python ... ```.\n"
-    "3. After the code, explain EACH LINE of the code one by one.\n"
-    "4. Use very simple words and short sentences.\n"
-    "5. For every line, give a small real-world example (like toys, fruits, school, or daily life).\n"
-    "6. Do NOT use technical jargon.\n"
-    "7. Do NOT add filler sentences like 'Here is the code'.\n"
-    "8. Make the explanation friendly and easy to remember.\n"
+    "2. Put the code ONLY inside a Markdown block using ```python ... ```.\n"
+    "3. Explain the code LINE BY LINE in very simple words.\n\n"
+    "IMPORTANT: Follow this structure EXACTLY:\n\n"
+    "### The Code\n"
+    "```python\n"
+    "# write the complete solution code here\n"
+    "```\n\n"
+    "### Explanation\n"
+    "- Explain each line in order.\n"
+    "- Number the explanations to match the code lines.\n"
+    "- Use this format strictly:\n"
+    "  **Line 1**: Simple explanation with a real-life example.\n"
+    "  **Line 2**: Simple explanation with a real-life example.\n"
+    "  **Line 3**: Simple explanation with a real-life example.\n\n"
+    "Rules:\n"
+    "- Use words a 3rd standard student can understand.\n"
+    "- Use daily-life analogies only (fruits, toys, school, home).\n"
+    "- Keep sentences short and friendly.\n"
+    "- Do NOT use technical terms or jargon.\n"
+    "- Do NOT add any text before '### The Code'.\n"
 )
+
 
 
     try:

@@ -1,5 +1,4 @@
-import React from "react";
-import GlassCard from "./GlassCard";
+import ReactMarkdown from 'react-markdown';
 
 export default function ExplanationPanel({ explanation, userQuery }) {
 
@@ -16,12 +15,19 @@ export default function ExplanationPanel({ explanation, userQuery }) {
         )}
 
         {/* AI Answer Section */}
-        <div style={{ 
+        <div className="markdown-body" style={{ 
             flex: 1, 
             overflowY: "auto", 
-            paddingRight: "5px"
+            paddingRight: "5px",
+            color: "white",
+            fontSize: "0.95rem",
+            lineHeight: "1.6"
         }}>
-          {explanation || "I am ready to help! Ask me anything about Python."}
+          {explanation ? (
+              <ReactMarkdown>{explanation}</ReactMarkdown>
+          ) : (
+              "I am ready to help! Ask me anything about Python."
+          )}
         </div>
 
       </div>

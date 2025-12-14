@@ -74,7 +74,7 @@ export default function SearchBar({ onSubmit, loading, onStateChange }) {
             isListeningRef.current = false;
             setIsListeningState(false);
           }
-        }, 2500);
+        }, 5000);
 
         if (isFinal && transcript.length > 0) {
           if (silenceTimer.current) clearTimeout(silenceTimer.current);
