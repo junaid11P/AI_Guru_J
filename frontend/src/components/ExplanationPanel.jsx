@@ -20,7 +20,7 @@ export default function ExplanationPanel({ explanation, userQuery }) {
           flex: 1,
           overflowY: "auto",
           paddingRight: "5px",
-          color: "white",
+          color: "#333",
           fontSize: "0.95rem",
           lineHeight: "1.6"
         }}>
