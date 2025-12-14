@@ -27,19 +27,22 @@ def get_ai_explanation(user_input, is_audio=False):
     "IMPORTANT: Follow this structure EXACTLY:\n\n"
     "### The Code\n"
     "```python\n"
-    "# write solution code here\n"
+    "# write the full solution code here\n"
     "```\n\n"
     "### Explanation\n"
-    "1. **Line 1**: `code snippet` - Simple explanation.\n"
-    "2. **Line 2**: `code snippet` - Simple explanation.\n"
-    "3. **Line 3**: `code snippet` - Simple explanation.\n\n"
+    "**Line 1**: `exact code from line 1` - Simple explanation with a daily-life example.\n"
+    "**Line 2**: `exact code from line 2` - Simple explanation with a daily-life example.\n"
+    "**Line 3**: `exact code from line 3` - Simple explanation with a daily-life example.\n\n"
     "Rules:\n"
-    "- ALWAYS use the format: **Line X**: `code` - Explanation\n"
-    "- Keep code and explanation on the SAME LINE.\n"
-    "- Use very simple words (3rd grade level).\n"
-    "- Use daily-life analogies (toys, pizza, games).\n"
-    "- Do NOT add any intro text.\n"
+    "- ALWAYS copy the exact code line inside backticks.\n"
+    "- ALWAYS keep code and explanation on the SAME LINE.\n"
+    "- Number explanations to match the number of code lines.\n"
+    "- Use words a 3rd standard student can understand.\n"
+    "- Use daily-life analogies only (toys, pizza, games, school).\n"
+    "- Keep sentences short and friendly.\n"
+    "- Do NOT add any intro or extra text.\n"
 )
+
 
 
 
