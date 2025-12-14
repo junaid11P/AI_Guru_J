@@ -24,9 +24,10 @@ def clean_text_for_speech(text: str) -> str:
 def generate_tiktok_audio(text: str, voice: str) -> str:
     """
     Connects to TikTok's TTS API directly.
+    Using a public reverse-engineered endpoint.
     """
     try:
-        # This is a common workaround for "free" access
+        # Public instance of TikTok TTS wrapper
         url = "https://tiktok-tts.weilnet.workers.dev/api/generation"
         
         payload = {
@@ -60,9 +61,8 @@ def generate_tiktok_audio(text: str, voice: str) -> str:
 
 async def generate_speech(text_to_speak: str, gender: str = "female") -> str:
     """
-    Strategy:
-    1. Try TikTok TTS (High Quality Male/Female).
-    2. Fallback to Google TTS (Reliable Female).
+    Generates TikTok Audio.
+    Fallback to Google TTS if TikTok fails.
     """
     try:
         if not text_to_speak:
@@ -71,16 +71,16 @@ async def generate_speech(text_to_speak: str, gender: str = "female") -> str:
         clean_text = clean_text_for_speech(text_to_speak)
         logger.info(f"🎤 Synthesizing ({gender}): '{clean_text[:30]}...'")
 
-        # --- OPTION 1: TikTok TTS (Male & Female) ---
+        # --- TikTok TTS ---
         tiktok_voice = TIKTOK_VOICES.get(gender, "en_us_001")
-        logger.info(f"🎵 Trying TikTok TTS ({tiktok_voice})...")
+        logger.info(f"� Trying TikTok TTS ({tiktok_voice})...")
         
         path = generate_tiktok_audio(clean_text, tiktok_voice)
         if path:
             logger.info("✅ TikTok TTS Success")
             return path
         
-        # --- OPTION 2: Google TTS Fallback ---
+        # --- Fallback: Google TTS ---
         logger.warning("⚠️ TikTok failed. Using Google TTS Backup.")
         
         fd, path = tempfile.mkstemp(suffix=".mp3")

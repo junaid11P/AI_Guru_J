@@ -7,4 +7,4 @@ pydantic-settings
 dnspython
 ollama
 gTTS 
-groq
+edge-tts

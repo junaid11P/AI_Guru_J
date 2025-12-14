@@ -1,17 +1,24 @@
 import React, { useEffect, useState, useRef } from "react";
 
 export default function SearchBar({ onSubmit, loading, onStateChange }) {
-  const [isListening, setIsListening] = useState(false); // Active recording state
-  const [isWakeWordActive, setIsWakeWordActive] = useState(true); // "Waiting for Guru J" state
+  const [isListeningState, setIsListeningState] = useState(false); // For UI rendering
+  const [isWakeWordActive, setIsWakeWordActive] = useState(true); // For UI rendering
+
+  // Refs for stable access inside event listeners
+  const isListeningRef = useRef(false);
+  const loadingRef = useRef(loading);
+  const onSubmitRef = useRef(onSubmit);
   const recognitionRef = useRef(null);
   const silenceTimer = useRef(null);
 
-  // --- REPORT STATE CHANGE ---
+  // Sync props/state to refs
+  useEffect(() => { loadingRef.current = loading; }, [loading]);
+  useEffect(() => { onSubmitRef.current = onSubmit; }, [onSubmit]);
   useEffect(() => {
-    if (onStateChange) onStateChange(isListening);
-  }, [isListening, onStateChange]);
+    if (onStateChange) onStateChange(isListeningState);
+  }, [isListeningState, onStateChange]);
 
-  // --- INITIALIZE SPEECH RECOGNITION ---
+  // --- INITIALIZE SPEECH RECOGNITION (RUNS ONCE) ---
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -20,114 +27,109 @@ export default function SearchBar({ onSubmit, loading, onStateChange }) {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = true; // Keep listening to detect wake word
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
 
+    recognition.onstart = () => {
+      console.log("Recognition started");
+      setIsWakeWordActive(true);
+    };
+
     recognition.onresult = (event) => {
-      // If loading (processing previous request), ignore input to avoid confusion
-      if (loading) return;
+      if (loadingRef.current) return;
 
       const results = Array.from(event.results);
       const lastResult = results[results.length - 1];
       const transcript = lastResult[0].transcript.toLowerCase().trim();
       const isFinal = lastResult.isFinal;
 
-      // DEBUG: console.log("Heard:", transcript, "Final:", isFinal);
-
       // --- 1. WAKE WORD DETECTION ---
-      if (!isListening) {
-        // Flexible matching for "Guru J"
+      if (!isListeningRef.current) {
         if (transcript.includes("guru j") || transcript.includes("guru jay") || transcript.includes("guruji")) {
-          setIsListening(true);
-          // Optional: Play a "ding" sound here
           console.log("Wake Word Detected!");
+          isListeningRef.current = true;
+          setIsListeningState(true);
 
-          // If it was one continuous phrase "Guru J what is python", capture the rest
+          // Check if query followed immediately
           const parts = transcript.split(/guru j|guru jay|guruji/);
           if (parts.length > 1 && parts[1].trim().length > 5) {
-            // They said the query in the same breath
-            onSubmit(parts[1].trim());
-            setIsListening(false);
-            // Note: recognition continues, but we reset UI
+            const query = parts[1].trim();
+            console.log("Instant Query:", query);
+            onSubmitRef.current(query);
+            isListeningRef.current = false;
+            setIsListeningState(false);
           }
         }
       }
       // --- 2. QUERY CAPTURE ---
       else {
-        // We are already listening. Wait for silence/finality.
-
-        // Reset silence timer on every speech event
         if (silenceTimer.current) clearTimeout(silenceTimer.current);
 
-        // Auto-submit if user pauses for 2 seconds (Siri style)
+        // Auto-submit after silence
         silenceTimer.current = setTimeout(() => {
           if (transcript.length > 0) {
-            console.log("Auto-submitting due to silence:", transcript);
-            onSubmit(transcript);
-            setIsListening(false);
+            console.log("Auto-submitting (Silence):", transcript);
+            onSubmitRef.current(transcript);
+            isListeningRef.current = false;
+            setIsListeningState(false);
           }
         }, 2500);
 
-        // Also submit immediately if "Final" (browser thinks sentence ended)
-        if (isFinal) {
-          if (silenceTimer.current) clearTimeout(silenceTimer.current); // Cancel timer
-          if (transcript.length > 0) {
-            onSubmit(transcript);
-            setIsListening(false);
-          }
+        if (isFinal && transcript.length > 0) {
+          if (silenceTimer.current) clearTimeout(silenceTimer.current);
+          console.log("Auto-submitting (Final):", transcript);
+          onSubmitRef.current(transcript);
+          isListeningRef.current = false;
+          setIsListeningState(false);
         }
       }
     };
 
     recognition.onend = () => {
-      // ALWAYS RESTART! (Unless component unmounts)
-      // This is the key to "Always Listening"
+      // Auto-restart for continuous listening
       if (recognitionRef.current) {
         try {
           recognition.start();
           console.log("...restarting listener...");
         } catch (e) {
-          console.log("Restart validation:", e);
+          // ignore
         }
       }
     };
 
     recognition.onerror = (event) => {
-      console.error("Speech Error", event.error);
       if (event.error === 'not-allowed') {
-        setIsWakeWordActive(false); // User denied permission
+        setIsWakeWordActive(false);
       }
-      // Use onend to restart
     };
 
     try {
       recognition.start();
-    } catch (e) { console.error(e); }
+    } catch (e) { }
 
     recognitionRef.current = recognition;
 
     return () => {
-      recognitionRef.current = null; // Prevent restart loop
+      // Cleanup on unmount
+      recognitionRef.current = null;
       recognition.stop();
       if (silenceTimer.current) clearTimeout(silenceTimer.current);
     };
-  }, [onSubmit, loading, isListening]); // Re-bind if these change
+  }, []); // Run ONCE on mount
 
   const manualToggle = () => {
-    if (isListening) {
-      setIsListening(false);
-      // recognition continues running for wake word
-    } else {
-      setIsListening(true);
-    }
+    // Toggle logic using refs
+    const newState = !isListeningRef.current;
+    isListeningRef.current = newState;
+    setIsListeningState(newState);
   };
 
   return (
     <div className="search-bar" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
 
       {/* Helper Text */}
-      {!isListening && !loading && isWakeWordActive && (
+      {!isListeningState && !loading && isWakeWordActive && (
         <div style={{
           fontSize: '10px',
           color: 'rgba(255,255,255,0.7)',
@@ -143,14 +145,13 @@ export default function SearchBar({ onSubmit, loading, onStateChange }) {
 
       <button
         onClick={manualToggle}
-        className={`mic-btn ${isListening ? "recording" : ""}`}
+        className={`mic-btn ${isListeningState ? "recording" : ""}`}
         disabled={loading}
         style={{ position: 'relative' }}
       >
-        {loading ? "Thinking..." : isListening ? "Listening..." : "🎙️"}
+        {loading ? "Thinking..." : isListeningState ? "Listening..." : "🎙️"}
 
-        {/* Visual Pulse ring when listening */}
-        {isListening && !loading && (
+        {isListeningState && !loading && (
           <div className="wake-pulse"></div>
         )}
       </button>
