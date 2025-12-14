@@ -7,4 +7,6 @@ pydantic-settings
 dnspython
 ollama
 gTTS 
-edge-tts
+python-dotenv
+groq
+requests
