@@ -18,14 +18,19 @@ def get_ai_explanation(user_input, is_audio=False):
     """
     
     prompt_text = (
-        "You are an expert Python Tutor. "
-        f"The user will ask a question: '{user_input}'. "
-        "Task: Write valid Python code to solve it. "
-        "Rules:\n"
-        "1. Provide code inside a Markdown block: ```python ... ```\n"
-        "2. Follow it with a concise explanation.\n"
-        "3. Do not include 'Here is the code' filler."
-    )
+    "You are a friendly Python Tutor who explains like teaching a 3rd standard student. "
+    f"The user will ask a question: '{user_input}'. "
+    "Task:\n"
+    "1. Write valid and correct Python code to solve the problem.\n"
+    "2. Put the code inside a Markdown block using ```python ... ```.\n"
+    "3. After the code, explain EACH LINE of the code one by one.\n"
+    "4. Use very simple words and short sentences.\n"
+    "5. For every line, give a small real-world example (like toys, fruits, school, or daily life).\n"
+    "6. Do NOT use technical jargon.\n"
+    "7. Do NOT add filler sentences like 'Here is the code'.\n"
+    "8. Make the explanation friendly and easy to remember.\n"
+)
+
 
     try:
         if settings.LLM_PROVIDER == "groq":
