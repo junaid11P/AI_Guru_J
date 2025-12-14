@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 
 export default function SearchBar({ onSubmit, loading, onStateChange }) {
-  const [isListening, setIsListening] = useState(false);
+  const [isListening, setIsListening] = useState(false); // Active recording state
+  const [isWakeWordActive, setIsWakeWordActive] = useState(true); // "Waiting for Guru J" state
   const recognitionRef = useRef(null);
+  const silenceTimer = useRef(null);
 
   // --- REPORT STATE CHANGE ---
   useEffect(() => {
@@ -18,50 +20,106 @@ export default function SearchBar({ onSubmit, loading, onStateChange }) {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = false; // We want one sentence/query at a time
+    recognition.continuous = true; // Keep listening to detect wake word
     recognition.interimResults = true;
     recognition.lang = "en-US";
 
-    recognition.onstart = () => setIsListening(true);
+    recognition.onresult = (event) => {
+      // If loading (processing previous request), ignore input to avoid confusion
+      if (loading) return;
 
-    recognition.onend = () => {
-      setIsListening(false);
+      const results = Array.from(event.results);
+      const lastResult = results[results.length - 1];
+      const transcript = lastResult[0].transcript.toLowerCase().trim();
+      const isFinal = lastResult.isFinal;
+
+      // DEBUG: console.log("Heard:", transcript, "Final:", isFinal);
+
+      // --- 1. WAKE WORD DETECTION ---
+      if (!isListening) {
+        // Flexible matching for "Guru J"
+        if (transcript.includes("guru j") || transcript.includes("guru jay") || transcript.includes("guruji")) {
+          setIsListening(true);
+          // Optional: Play a "ding" sound here
+          console.log("Wake Word Detected!");
+
+          // If it was one continuous phrase "Guru J what is python", capture the rest
+          const parts = transcript.split(/guru j|guru jay|guruji/);
+          if (parts.length > 1 && parts[1].trim().length > 5) {
+            // They said the query in the same breath
+            onSubmit(parts[1].trim());
+            setIsListening(false);
+            // Note: recognition continues, but we reset UI
+          }
+        }
+      }
+      // --- 2. QUERY CAPTURE ---
+      else {
+        // We are already listening. Wait for silence/finality.
+
+        // Reset silence timer on every speech event
+        if (silenceTimer.current) clearTimeout(silenceTimer.current);
+
+        // Auto-submit if user pauses for 2 seconds (Siri style)
+        silenceTimer.current = setTimeout(() => {
+          if (transcript.length > 0) {
+            console.log("Auto-submitting due to silence:", transcript);
+            onSubmit(transcript);
+            setIsListening(false);
+          }
+        }, 2500);
+
+        // Also submit immediately if "Final" (browser thinks sentence ended)
+        if (isFinal) {
+          if (silenceTimer.current) clearTimeout(silenceTimer.current); // Cancel timer
+          if (transcript.length > 0) {
+            onSubmit(transcript);
+            setIsListening(false);
+          }
+        }
+      }
     };
 
-    recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map((result) => result[0])
-        .map((result) => result.transcript)
-        .join("");
-
-      // Ensure we get the final result
-      if (event.results[0].isFinal) {
-        // If the user says something valid, submit it
-        if (transcript.trim().length > 0) {
-          onSubmit(transcript);
+    recognition.onend = () => {
+      // ALWAYS RESTART! (Unless component unmounts)
+      // This is the key to "Always Listening"
+      if (recognitionRef.current) {
+        try {
+          recognition.start();
+          console.log("...restarting listener...");
+        } catch (e) {
+          console.log("Restart validation:", e);
         }
       }
     };
 
     recognition.onerror = (event) => {
-      console.error("Speech Recognition Error", event.error);
-      setIsListening(false);
+      console.error("Speech Error", event.error);
+      if (event.error === 'not-allowed') {
+        setIsWakeWordActive(false); // User denied permission
+      }
+      // Use onend to restart
     };
 
+    try {
+      recognition.start();
+    } catch (e) { console.error(e); }
+
     recognitionRef.current = recognition;
-  }, [onSubmit]);
 
-  const toggleListening = () => {
-    if (loading) return;
+    return () => {
+      recognitionRef.current = null; // Prevent restart loop
+      recognition.stop();
+      if (silenceTimer.current) clearTimeout(silenceTimer.current);
+    };
+  }, [onSubmit, loading, isListening]); // Re-bind if these change
 
+  const manualToggle = () => {
     if (isListening) {
-      recognitionRef.current.stop();
+      setIsListening(false);
+      // recognition continues running for wake word
     } else {
-      try {
-        recognitionRef.current.start();
-      } catch (e) {
-        console.error("Could not start recognition:", e);
-      }
+      setIsListening(true);
     }
   };
 
@@ -69,7 +127,7 @@ export default function SearchBar({ onSubmit, loading, onStateChange }) {
     <div className="search-bar" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
 
       {/* Helper Text */}
-      {!isListening && !loading && (
+      {!isListening && !loading && isWakeWordActive && (
         <div style={{
           fontSize: '10px',
           color: 'rgba(255,255,255,0.7)',
@@ -79,12 +137,12 @@ export default function SearchBar({ onSubmit, loading, onStateChange }) {
           marginBottom: '-10px',
           zIndex: 5
         }}>
-          Tap to Speak...
+          Say "Guru J"...
         </div>
       )}
 
       <button
-        onClick={toggleListening}
+        onClick={manualToggle}
         className={`mic-btn ${isListening ? "recording" : ""}`}
         disabled={loading}
         style={{ position: 'relative' }}

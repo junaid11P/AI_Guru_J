@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Configuration
 OLLAMA_MODEL = "llama3.2" 
-GROQ_MODEL = "llama3-8b-8192" # Free, equivalent to llama3.2 roughly
+GROQ_MODEL = "llama-3.1-8b-instant" # Updated to supported model
 
 def get_ai_explanation(user_input, is_audio=False):
     """
