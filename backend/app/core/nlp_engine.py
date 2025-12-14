@@ -32,10 +32,10 @@ def get_ai_explanation(user_input, is_audio=False):
     "### Explanation\n"
     "- Explain each line in order.\n"
     "- Number the explanations to match the code lines.\n"
+    "- Keep the code snippet and explanation on the SAME LINE.\n"
     "- Use this format strictly:\n"
-    "  **Line 1**: Simple explanation with a real-life example.\n"
-    "  **Line 2**: Simple explanation with a real-life example.\n"
-    "  **Line 3**: Simple explanation with a real-life example.\n\n"
+    "  **Line 1**: [Code Snippet] - [Simple Explanation]\n"
+    "  **Line 2**: [Code Snippet] - [Simple Explanation]\n\n"
     "Rules:\n"
     "- Use words a 3rd standard student can understand.\n"
     "- Use daily-life analogies only (fruits, toys, school, home).\n"
@@ -82,7 +82,9 @@ def get_ai_explanation(user_input, is_audio=False):
         
         if code_matches:
             code_content = "\n\n".join(code_matches).strip()
-            explanation_text = re.sub(code_pattern, "", full_output, flags=re.DOTALL).strip()
+            # Remove the code block and headers
+            explanation_text = re.sub(code_pattern, "", full_output, flags=re.DOTALL)
+            explanation_text = explanation_text.replace("### The Code", "").replace("### Explanation", "").strip()
         else:
             code_content = "# No code block detected."
             explanation_text = full_output
