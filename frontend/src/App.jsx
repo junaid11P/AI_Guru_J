@@ -71,15 +71,6 @@ export default function App() {
     }
   }
 
-  async function handleSubmitVoice(transcript) {
-    if (!transcript) return;
-    setInputText(transcript); // Show what was heard
-    const formData = new FormData();
-    formData.append("text_query", transcript);
-    formData.append("teacher_gender", teacher);
-    await sendToBackend(formData);
-  }
-
   async function handleSubmitText() {
     if (!inputText.trim()) return;
     const formData = new FormData();
@@ -147,9 +138,9 @@ export default function App() {
           <div className="bottom-bar">
             <div className="search-bar-container">
               <SearchBar
-                onSubmit={handleSubmitVoice}
                 loading={loading}
                 onStateChange={setIsRecording}
+                onInputUpdate={setInputText}
               />
             </div>
 
