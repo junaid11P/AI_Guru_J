@@ -224,6 +224,19 @@ body, html, #root {
     color: #475569;
 }
 
+/* --- Markdown Styles within Explanation --- */
+.markdown-body ul {
+    padding-left: 20px;
+    margin: 10px 0;
+}
+.markdown-body li {
+    margin-bottom: 8px;
+}
+.markdown-body strong {
+    color: #a855f7; /* Purple to match theme */
+    font-weight: 700;
+}
+
 /* NEW: User Question Box */
 .user-query-box {
     background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(236, 72, 153, 0.1));
