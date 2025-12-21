@@ -9,8 +9,8 @@ class Settings(BaseSettings):
 
     MAX_TOKENS: int = 1024
     
-    # Provider: 'ollama' (Local) or 'groq' (Cloud/Render)
-    LLM_PROVIDER: str = "ollama" 
+    # Provider: 'groq' (Cloud/Render)
+    LLM_PROVIDER: str = "groq" 
     GROQ_API_KEY: str | None = None
 
     class Config:
