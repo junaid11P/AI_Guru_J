@@ -430,16 +430,6 @@ html,
     animation: pulse 1.5s infinite alternate;
 }
 
-.mic-btn.timer-mic {
-    background: linear-gradient(135deg, #ec4899, #be185d);
-    /* Pinkish for timer */
-    box-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
-}
-
-.mic-btn.timer-mic:hover {
-    box-shadow: 0 0 30px rgba(236, 72, 153, 0.5);
-}
-
 @keyframes pulse {
     0% {
         box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
