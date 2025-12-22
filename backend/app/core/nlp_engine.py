@@ -25,6 +25,7 @@ def get_ai_explanation(user_input, is_audio=False):
         "Rules:\n"
         "- Use a BULLET LIST for the explanation (e.g., - **Line 1**: `code` - Explanation).\n"
         "- Bold the line identifier (e.g., **Line 1**).\n"
+        "- Use words a 3rd standard student can understand.\n"
         "- If the code is just one line, offer ONLY one explanation for that line. DO NOT repeat explanations or add filler lines.\n"
         "- Use simple words and daily-life analogies (toys, school, etc.) that a young child can understand.\n"
         "- Keep sentences very short and avoid any intro or outro text (e.g., 'Sure!', 'Let's begin').\n"
@@ -35,13 +36,6 @@ def get_ai_explanation(user_input, is_audio=False):
         "```\n\n"
         "### Explanation\n"
         "- **Line X**: `code` - Simple explanation here.\n"
-        "Rules:\n"
-    "- Use a BULLET LIST for the explanation.\n"
-    "- Bold the Line number (e.g., **Line 1**).\n"
-    "- Use words a 3rd standard student can understand.\n"
-    "- Use daily-life analogies only (toys, pizza, games, school).\n"
-    "- Keep sentences short and friendly.\n"
-    "- Do NOT add any intro or extra text.\n"
     )
 
 
