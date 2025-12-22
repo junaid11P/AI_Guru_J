@@ -106,7 +106,7 @@ function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading, is
     audioEl.load();
 
     const handleLoadedMetadata = () => { if (audioEl.duration) setRealDuration(audioEl.duration); };
-    const handlePlay = () => { if (!isRecording && !loading) setState("Talking"); };
+    const handlePlay = () => { if (!isRecording && !loading && !isMuted) setState("Talking"); };
     const handlePause = () => { if (!isRecording && !loading) setState("Idle"); };
     const handleEnded = () => { if (!isRecording && !loading) setState("Idle"); };
     const handleCanPlayThrough = () => {
@@ -138,6 +138,7 @@ function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading, is
     if (!audioEl) return;
     if (isMuted) {
       audioEl.pause();
+      setState("Idle");
     } else {
       // Only resume if we have an audio URL and we are not recording/loading
       if (audioUrl && !isRecording && !loading && audioEl.paused && audioEl.currentTime > 0 && audioEl.currentTime < audioEl.duration) {
@@ -160,10 +161,11 @@ function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading, is
       setState("Thinking");
       if (audioEl && !audioEl.paused) audioEl.pause();
     } else {
-      if (audioEl && !audioEl.paused) setState("Talking");
+      if (isMuted) setState("Idle");
+      else if (audioEl && !audioEl.paused) setState("Talking");
       else setState("Idle");
     }
-  }, [isRecording, loading]);
+  }, [isRecording, loading, isMuted]);
 
   // --- Blinking ---
   useEffect(() => {
