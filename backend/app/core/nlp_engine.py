@@ -31,6 +31,7 @@ def get_ai_explanation(user_input, is_audio=False):
         "- Use simple words and daily-life analogies (toys, school, etc.) that a young child can understand.\n"
         "- Keep sentences very short and avoid any intro or outro text (e.g., 'Sure!', 'Let's begin').\n"
         "-At the very end, show the exact OUTPUT of the code.\n"
+        
         "Structure:\n"
         "### The Code\n"
         "```python\n"
