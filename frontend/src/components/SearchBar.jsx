@@ -10,6 +10,7 @@ export default function SearchBar({ onSubmit, loading, onStateChange, onInputUpd
   const loadingRef = useRef(loading);
   const recognitionRef = useRef(null);
   const silenceTimer = useRef(null);
+  const wakeWordIndexRef = useRef(null); // Tracks where the current session started in the results array
   const onInputUpdateRef = useRef(onInputUpdate);
 
   // Sync props/state to refs
@@ -49,7 +50,8 @@ export default function SearchBar({ onSubmit, loading, onStateChange, onInputUpd
 
       // --- 1. WAKE WORD DETECTION ---
       if (!isListeningRef.current) {
-        // Check for wake word variations
+        // Check for wake word variations in the *latest* result
+        // We only care about the latest result for wake word trigger
         const wakeWordMatch = transcript.match(/guru\s*j[a-z]*|guru\s*ji/i);
 
         if (wakeWordMatch) {
@@ -57,33 +59,58 @@ export default function SearchBar({ onSubmit, loading, onStateChange, onInputUpd
           isListeningRef.current = true;
           setIsListeningState(true);
 
+          // Store which result index triggered the wake word so we can accumulate from here
+          wakeWordIndexRef.current = results.length - 1;
+
           // Reset silence timer on wake word
           if (silenceTimer.current) clearTimeout(silenceTimer.current);
 
-          // Strip wake word and capture any immediate query
+          // Strip wake word and capture any immediate query in this same chunk
           const parts = transcript.split(wakeWordMatch[0]);
           if (parts.length > 1 && parts[1].trim().length > 0) {
-            const cleanQuery = parts[1].trim();
-            if (onInputUpdateRef.current) onInputUpdateRef.current(cleanQuery);
+            // We will handle accumulation in the "else" block by default, 
+            // but strictly speaking since we just switched state, we can force an update here or let the next event handle it.
+            // For simplicity, let's just let the next pass (or fallthrough if we restructure) handle it, 
+            // BUT since we are in the "if (!isListening)" block, we must handle the immediate text here if we want instant feedback.
+            // However, accumulation logic is better centralized. 
+            // Let's do a quick initial functional update:
+            const initialQuery = parts[1].trim();
+            if (onInputUpdateRef.current) onInputUpdateRef.current(initialQuery);
           } else {
-            // Clear input if only wake word was said
             if (onInputUpdateRef.current) onInputUpdateRef.current("");
           }
         }
       }
-      // --- 2. QUERY CAPTURE ---
+      // --- 2. QUERY CAPTURE (accumulate results) ---
       else {
-        // Handle "Guru Ji" being repeated or just normal speech
-        // We might want to strip "Guru Ji" if it appears again, but usually we just take the text
+        // We want to combine all results from wakeWordIndexRef to now
+        let fullTranscript = "";
 
-        // Update input field in real-time
-        if (onInputUpdateRef.current) onInputUpdateRef.current(transcript);
+        // Safety check: ensure start index is valid
+        const startIndex = wakeWordIndexRef.current !== null ? wakeWordIndexRef.current : 0;
+
+        for (let i = startIndex; i < results.length; i++) {
+          let chunk = results[i][0].transcript;
+          // If this is the start chunk, we need to strip the wake word if it exists
+          if (i === startIndex) {
+            const match = chunk.match(/guru\s*j[a-z]*|guru\s*ji/i);
+            if (match) {
+              chunk = chunk.substring(match.index + match[0].length);
+            }
+          }
+          fullTranscript += chunk + " ";
+        }
+
+        fullTranscript = fullTranscript.trim();
+
+        // Update input field in real-time with ACCUMULATED text
+        if (onInputUpdateRef.current) onInputUpdateRef.current(fullTranscript);
 
         if (silenceTimer.current) clearTimeout(silenceTimer.current);
 
         // Stop listening (but DONT submit) after silence
         silenceTimer.current = setTimeout(() => {
-          if (transcript.length > 0) {
+          if (fullTranscript.length > 0) {
             console.log("Silence detected: Stopping listening");
             isListeningRef.current = false;
             setIsListeningState(false);
@@ -91,11 +118,10 @@ export default function SearchBar({ onSubmit, loading, onStateChange, onInputUpd
           }
         }, 5000);
 
+        // REMOVED: The logic that stopped immediately on isFinal.
+        // We now rely ONLY on silence or manual stop.
         if (isFinal) {
-          console.log("Final result: Stopping listening");
-          isListeningRef.current = false;
-          setIsListeningState(false);
-          if (silenceTimer.current) clearTimeout(silenceTimer.current);
+          console.log("Chunk final. Continuing to listen...");
         }
       }
     };
