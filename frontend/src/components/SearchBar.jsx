@@ -108,15 +108,19 @@ export default function SearchBar({ onSubmit, loading, onStateChange, onInputUpd
 
         if (silenceTimer.current) clearTimeout(silenceTimer.current);
 
-        // Stop listening (but DONT submit) after silence
+        // Stop listening AND SUBMIT after silence (Siri-like)
         silenceTimer.current = setTimeout(() => {
           if (fullTranscript.length > 0) {
-            console.log("Silence detected: Stopping listening");
+            console.log("Silence detected: Auto-submitting");
             isListeningRef.current = false;
             setIsListeningState(false);
-            // We assume the user enters the text to review
+
+            // Auto-submit!
+            if (onSubmit) {
+              onSubmit(fullTranscript);
+            }
           }
-        }, 5000);
+        }, 2000); // Reduced to 2s for snappier response
 
         // REMOVED: The logic that stopped immediately on isFinal.
         // We now rely ONLY on silence or manual stop.

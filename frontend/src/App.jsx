@@ -71,14 +71,19 @@ export default function App() {
     }
   }
 
-  async function handleSubmitText() {
-    if (!inputText.trim()) return;
+  async function handleSubmitText(textOverride = null) {
+    const textToSend = typeof textOverride === 'string' ? textOverride : inputText;
+    if (!textToSend.trim()) return;
+
+    // Update input text visual state if we are auto-submitting
+    if (textOverride) setInputText(textOverride);
+
     const formData = new FormData();
-    formData.append("text_query", inputText);
+    formData.append("text_query", textToSend);
     formData.append("teacher_gender", teacher);
     await sendToBackend(formData);
-    // setInputText(""); // Keep the text so user feels confirmed? Or clear it? Standard is clear, but for voice we set it. 
-    // Let's clear it for text typing to allow new query.
+
+    // Clear after send
     setInputText("");
   }
 
@@ -141,6 +146,7 @@ export default function App() {
                 loading={loading}
                 onStateChange={setIsRecording}
                 onInputUpdate={setInputText}
+                onSubmit={(text) => handleSubmitText(text)}
               />
             </div>
 
