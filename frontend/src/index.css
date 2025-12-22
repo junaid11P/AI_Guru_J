@@ -97,6 +97,52 @@ body, html, #root {
     top: 30px;
     right: 40px;
     z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.nav-controls {
+    display: flex;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 6px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.nav-control-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.nav-control-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.1);
+}
+
+.nav-control-btn:active {
+    transform: scale(0.95);
+}
+
+.mute-btn {
+    width: 32px;
+    height: 32px;
+}
+
+.reload-btn {
+    width: 32px;
+    height: 32px;
 }
 
 /* --- Main Content Area --- */

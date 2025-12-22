@@ -26,6 +26,8 @@ export default function App() {
 
   const [audioUrl, setAudioUrl] = useState(null);
   const [lipSyncData, setLipSyncData] = useState(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [reloadTrigger, setReloadTrigger] = useState(0);
 
   useEffect(() => {
     if (!explanation || loading || explanation === "Thinking...") {
@@ -117,6 +119,22 @@ export default function App() {
       ) : (
         <>
           <div className="top-right-selector">
+            <div className="nav-controls">
+              <button 
+                className="nav-control-btn mute-btn" 
+                onClick={() => setIsMuted(!isMuted)}
+                title={isMuted ? "Unmute" : "Mute"}
+              >
+                {isMuted ? "🔈" : "🔊"}
+              </button>
+              <button 
+                className="nav-control-btn reload-btn" 
+                onClick={() => setReloadTrigger(prev => prev + 1)}
+                title="Reload Voice"
+              >
+                🔄
+              </button>
+            </div>
             <TeacherSelector teacher={teacher} setTeacher={setTeacher} />
           </div>
 
@@ -136,6 +154,8 @@ export default function App() {
                 audioUrl={audioUrl}
                 isRecording={isRecording}
                 loading={loading}
+                isMuted={isMuted}
+                reloadTrigger={reloadTrigger}
               />
             </div>
           </div>

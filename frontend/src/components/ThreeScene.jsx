@@ -6,15 +6,15 @@ import { randInt } from "three/src/math/MathUtils";
 
 /* ---------------- TEACHER CONFIGURATION ---------------- */
 const TEACHER_CONFIG = {
-  male: { 
-    position: [0, -2.0, 0], 
-    scale: 1.8,  
+  male: {
+    position: [0, -2.0, 0],
+    scale: 1.8,
     bubblePos: [0, 2.5, 0] // Higher bubble for Male
   },
-  female: { 
-    position: [0, -1.6, 0], 
-    scale: 1.7, 
-    bubblePos: [0, 2.2, 0] 
+  female: {
+    position: [0, -1.6, 0],
+    scale: 1.7,
+    bubblePos: [0, 2.2, 0]
   },
 };
 
@@ -44,12 +44,12 @@ function detectClip(actions, tags = []) {
 }
 
 /* ---------------- MODEL COMPONENT ---------------- */
-function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading }) {
+function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading, isMuted, reloadTrigger }) {
   const head = useRef();
-  
+
   // 1. USE ORIGINAL SEPARATE FILES
   const modelFile = teacher === "male" ? "male_teacher" : "female_teacher";
-  const animFile = teacher === "male" ? "animations_male" : "animations_female"; 
+  const animFile = teacher === "male" ? "animations_male" : "animations_female";
 
   const { scene: modelScene } = useGLTF(`/models/${modelFile}.glb`, true);
   const { animations } = useGLTF(`/models/${animFile}.glb`, true);
@@ -71,9 +71,9 @@ function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading }) 
   const { actions, mixer } = useAnimations(animations, modelScene);
 
   const [audioEl, setAudioEl] = useState(null);
-  const [realDuration, setRealDuration] = useState(0); 
+  const [realDuration, setRealDuration] = useState(0);
   const [state, setState] = useState("Idle");
-  
+
   const [blink, setBlink] = useState(false);
   const [dots, setDots] = useState(".");
   const blinkRef = useRef();
@@ -83,12 +83,12 @@ function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading }) 
   useEffect(() => {
     head.current = null;
     modelScene.traverse((c) => {
-        if (c.isMesh && c.morphTargetDictionary) {
-            // Prioritize Head/Face
-            if (c.name.includes("Head") || c.name.includes("Face") || !head.current) {
-                head.current = c;
-            }
+      if (c.isMesh && c.morphTargetDictionary) {
+        // Prioritize Head/Face
+        if (c.name.includes("Head") || c.name.includes("Face") || !head.current) {
+          head.current = c;
         }
+      }
     });
   }, [modelScene, teacher]);
 
@@ -96,27 +96,50 @@ function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading }) 
   useEffect(() => {
     if (audioEl) { audioEl.pause(); audioEl.src = ""; }
     if (!audioUrl) {
-        setState((isRecording || loading) ? "Thinking" : "Idle");
-        return;
+      setState((isRecording || loading) ? "Thinking" : "Idle");
+      return;
     }
     const a = new Audio(audioUrl);
-    a.onloadedmetadata = () => { if(a.duration) setRealDuration(a.duration); };
+    a.onloadedmetadata = () => { if (a.duration) setRealDuration(a.duration); };
     a.onplay = () => { if (!isRecording && !loading) setState("Talking"); };
     a.onpause = () => { if (!isRecording && !loading) setState("Idle"); };
     a.onended = () => { if (!isRecording && !loading) setState("Idle"); };
-    a.oncanplaythrough = () => a.play().catch(() => {});
+    a.oncanplaythrough = () => {
+      if (!isMuted) a.play().catch(() => { });
+    };
     setAudioEl(a);
     return () => { a.pause(); a.src = ""; };
   }, [audioUrl, teacher]);
 
+  // --- Mute Logic ---
+  useEffect(() => {
+    if (!audioEl) return;
+    if (isMuted) {
+      audioEl.pause();
+    } else {
+      // Only resume if we have an audio URL and we are not recording/loading
+      if (audioUrl && !isRecording && !loading && audioEl.paused && audioEl.currentTime > 0 && audioEl.currentTime < audioEl.duration) {
+        audioEl.play().catch(() => { });
+      }
+    }
+  }, [isMuted]);
+
+  // --- Reload Logic ---
+  useEffect(() => {
+    if (!audioEl || reloadTrigger === 0) return;
+    audioEl.currentTime = 0;
+    if (!isMuted) audioEl.play().catch(() => { });
+    else setState("Idle"); // Ensure idle if muted
+  }, [reloadTrigger]);
+
   // --- State Logic ---
   useEffect(() => {
     if (isRecording || loading) {
-        setState("Thinking");
-        if(audioEl && !audioEl.paused) audioEl.pause();
+      setState("Thinking");
+      if (audioEl && !audioEl.paused) audioEl.pause();
     } else {
-        if (audioEl && !audioEl.paused) setState("Talking");
-        else setState("Idle");
+      if (audioEl && !audioEl.paused) setState("Talking");
+      else setState("Idle");
     }
   }, [isRecording, loading]);
 
@@ -151,10 +174,10 @@ function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading }) 
     let targetClipName = idleClip;
     if (state === "Talking" && talkClip) targetClipName = talkClip;
     // Fallback to idle if thinking clip is missing
-    if (state === "Thinking") targetClipName = thinkClip || idleClip; 
+    if (state === "Thinking") targetClipName = thinkClip || idleClip;
 
     Object.values(actions).forEach((action) => {
-        if (action.getClip().name !== targetClipName) action.fadeOut(FADE);
+      if (action.getClip().name !== targetClipName) action.fadeOut(FADE);
     });
 
     if (actions[targetClipName]) actions[targetClipName].reset().fadeIn(FADE).play();
@@ -178,17 +201,17 @@ function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading }) 
   useFrame(() => {
     // 1. Blinking
     morph("eye_close", blink ? 1 : 0, 0.25);
-    
+
     // 2. Reset Mouth (Faster close for snappy lips)
     if (head.current?.morphTargetDictionary) {
-        for (let i = 0; i <= 21; i++) morph(i.toString(), 0, 0.4);
+      for (let i = 0; i <= 21; i++) morph(i.toString(), 0, 0.4);
     }
 
     // 3. LIP SYNC FIX (Lookahead + Faster Morph)
     if (state === "Talking" && audioEl && !audioEl.paused && lipSyncData?.mouthCues && realDuration > 0) {
       // LOOKAHEAD: We check 0.1s into the future
       const currentAudioTime = audioEl.currentTime + 0.1;
-      
+
       const estimatedDuration = lipSyncData.metadata?.duration || realDuration;
       const normalizedTime = (currentAudioTime / realDuration) * estimatedDuration;
 
@@ -225,7 +248,11 @@ export default function ThreeScene(props) {
       <ambientLight intensity={0.6} />
       <directionalLight intensity={1.2} position={[5, 5, 5]} />
       <Suspense key={props.teacher} fallback={null}>
-        <TeacherModel {...props} />
+        <TeacherModel
+          {...props}
+          isMuted={props.isMuted}
+          reloadTrigger={props.reloadTrigger}
+        />
         <Environment preset="city" />
       </Suspense>
       <OrbitControls enableZoom={false} enablePan={false} target={[0, 0.2, 0]} />
