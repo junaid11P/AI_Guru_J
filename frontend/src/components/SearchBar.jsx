@@ -10,8 +10,11 @@ export default function SearchBar({ onSubmit, loading, onStateChange, onInputUpd
   const loadingRef = useRef(loading);
   const recognitionRef = useRef(null);
   const silenceTimer = useRef(null);
-  const wakeWordIndexRef = useRef(null); // Tracks where the current session started in the results array
+  const recordingTimer = useRef(null); // Timer for 8-second record
+  const wakeWordIndexRef = useRef(null);
   const onInputUpdateRef = useRef(onInputUpdate);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [isTimerMode, setIsTimerMode] = useState(false);
 
   // Sync props/state to refs
   useEffect(() => { loadingRef.current = loading; }, [loading]);
@@ -106,27 +109,33 @@ export default function SearchBar({ onSubmit, loading, onStateChange, onInputUpd
         // Update input field in real-time with ACCUMULATED text
         if (onInputUpdateRef.current) onInputUpdateRef.current(fullTranscript);
 
-        if (silenceTimer.current) clearTimeout(silenceTimer.current);
-
-        // Stop listening AND SUBMIT after silence (Siri-like)
-        silenceTimer.current = setTimeout(() => {
-          if (fullTranscript.length > 0) {
-            console.log("Silence detected: Auto-submitting");
-            isListeningRef.current = false;
-            setIsListeningState(false);
-
-            // Auto-submit!
-            if (onSubmit) {
-              onSubmit(fullTranscript);
+        // Stop listening AND SUBMIT after silence (Siri-like) - Only if NOT in timer mode
+        if (!isTimerMode) {
+          if (silenceTimer.current) clearTimeout(silenceTimer.current);
+          silenceTimer.current = setTimeout(() => {
+            if (fullTranscript.length > 0) {
+              console.log("Silence detected: Auto-submitting");
+              stopAndSubmit(fullTranscript);
             }
-          }
-        }, 2000); // Reduced to 2s for snappier response
+          }, 2000);
+        }
 
-        // REMOVED: The logic that stopped immediately on isFinal.
-        // We now rely ONLY on silence or manual stop.
         if (isFinal) {
           console.log("Chunk final. Continuing to listen...");
         }
+      }
+    };
+
+    const stopAndSubmit = (text) => {
+      isListeningRef.current = false;
+      setIsListeningState(false);
+      setIsTimerMode(false);
+      if (recordingTimer.current) clearInterval(recordingTimer.current);
+      if (silenceTimer.current) clearTimeout(silenceTimer.current);
+      setTimeLeft(0);
+
+      if (onSubmit && text) {
+        onSubmit(text);
       }
     };
 
@@ -170,14 +179,47 @@ export default function SearchBar({ onSubmit, loading, onStateChange, onInputUpd
   }, []); // Run ONCE on mount
 
   const manualToggle = () => {
-    // Toggle logic using refs
+    if (loading || !!errorMsg) return;
+
+    // Toggle logic
     const newState = !isListeningRef.current;
     isListeningRef.current = newState;
     setIsListeningState(newState);
+    setIsTimerMode(false); // Manual toggle always resets timer mode
+    if (recordingTimer.current) clearInterval(recordingTimer.current);
+    setTimeLeft(0);
+
     if (newState && onInputUpdateRef.current) {
-      // Clear input when manually starting? Optional. 
-      // onInputUpdateRef.current(""); 
+      onInputUpdateRef.current("");
+      wakeWordIndexRef.current = null; // Important: reset index for manual start
     }
+  };
+
+  const startEightSecondRecord = () => {
+    if (loading || !!errorMsg || isListeningRef.current) return;
+
+    console.log("Starting 8-second recording...");
+    isListeningRef.current = true;
+    setIsListeningState(true);
+    setIsTimerMode(true);
+    setTimeLeft(8);
+
+    if (onInputUpdateRef.current) {
+      onInputUpdateRef.current("");
+    }
+    wakeWordIndexRef.current = null;
+
+    let countdown = 8;
+    recordingTimer.current = setInterval(() => {
+      countdown -= 1;
+      setTimeLeft(countdown);
+      if (countdown <= 0) {
+        clearInterval(recordingTimer.current);
+        // Grab current text and submit
+        const currentInput = document.querySelector('.text-input-field')?.value || "";
+        stopAndSubmit(currentInput);
+      }
+    }, 1000);
   };
 
   return (
@@ -198,19 +240,35 @@ export default function SearchBar({ onSubmit, loading, onStateChange, onInputUpd
         </div>
       )}
 
-      <button
-        onClick={manualToggle}
-        className={`mic-btn ${isListeningState ? "recording" : ""}`}
-        disabled={loading || !!errorMsg}
-        title={errorMsg || "Activate Voice"}
-        style={{ position: 'relative' }}
-      >
-        {loading ? "Thinking..." : isListeningState ? "Listening..." : "🎙️"}
+      <div style={{ display: 'flex', gap: '15px' }}>
+        <button
+          onClick={manualToggle}
+          className={`mic-btn ${isListeningState && !isTimerMode ? "recording" : ""}`}
+          disabled={loading || !!errorMsg || (isListeningState && isTimerMode)}
+          title={errorMsg || "Wake Word / Manual"}
+          style={{ position: 'relative' }}
+        >
+          {loading ? "..." : (isListeningState && !isTimerMode) ? "🛑" : "🎙️"}
+          <span style={{ fontSize: '10px', marginTop: '4px' }}>Guru Ji</span>
+          {isListeningState && !isTimerMode && !loading && (
+            <div className="wake-pulse"></div>
+          )}
+        </button>
 
-        {isListeningState && !loading && (
-          <div className="wake-pulse"></div>
-        )}
-      </button>
+        <button
+          onClick={startEightSecondRecord}
+          className={`mic-btn timer-mic ${isTimerMode ? "recording" : ""}`}
+          disabled={loading || !!errorMsg || (isListeningState && !isTimerMode)}
+          title="Record for 8 seconds"
+          style={{ position: 'relative' }}
+        >
+          {isTimerMode ? `${timeLeft}s` : "8s"}
+          <span style={{ fontSize: '10px', marginTop: '4px' }}>Timer</span>
+          {isTimerMode && !loading && (
+            <div className="wake-pulse"></div>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
