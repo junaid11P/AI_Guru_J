@@ -21,8 +21,8 @@ def get_ai_explanation(user_input, is_audio=False):
         "Task:\n"
         "1. Write valid and correct Python code to solve the problem.\n"
         "2. Put the code ONLY inside a Markdown block using ```python ... ```.\n"
-        "3. Explain the code line-by-line using a bullet list. Provide exactly ONE unique explanation for each distinct line of code.\n"
-        "4. At the very end, show the exact OUTPUT of the code.\n\n"
+        "3. Explain the code line-by-line using a bullet list. Provide exactly ONE unique explanation for each distinct line of code.\n\n"
+
         "Rules:\n"
         "- Use a BULLET LIST for the explanation (e.g., - **Line 1**: `code` - Explanation).\n"
         "- Bold the line identifier (e.g., **Line 1**).\n"
@@ -30,6 +30,7 @@ def get_ai_explanation(user_input, is_audio=False):
         "- If the code is just one line, offer ONLY one explanation for that line. DO NOT repeat explanations or add filler lines.\n"
         "- Use simple words and daily-life analogies (toys, school, etc.) that a young child can understand.\n"
         "- Keep sentences very short and avoid any intro or outro text (e.g., 'Sure!', 'Let's begin').\n"
+        "-At the very end, show the exact OUTPUT of the code.\n"
         "Structure:\n"
         "### The Code\n"
         "```python\n"
@@ -37,10 +38,7 @@ def get_ai_explanation(user_input, is_audio=False):
         "```\n\n"
         "### Explanation\n"
         "- **Line X**: `code` - Simple explanation here.\n"
-        "### Output\n"
-        "```text\n"
-        "The result goes here\n"
-        "```\n"
+        
     )
 
 
