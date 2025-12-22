@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 
-export default function SearchBar({ onSubmit, loading, onStateChange, onInputUpdate }) {
+export default function SearchBar({ onSubmit, loading, isSpeaking, onStateChange, onInputUpdate }) {
   const [isListeningState, setIsListeningState] = useState(false); // For UI rendering
   const [isWakeWordActive, setIsWakeWordActive] = useState(true); // For UI rendering
   const [errorMsg, setErrorMsg] = useState(null);
@@ -12,9 +12,11 @@ export default function SearchBar({ onSubmit, loading, onStateChange, onInputUpd
   const silenceTimer = useRef(null);
   const wakeWordIndexRef = useRef(null);
   const onInputUpdateRef = useRef(onInputUpdate);
+  const isSpeakingRef = useRef(isSpeaking);
 
   // Sync props/state to refs
   useEffect(() => { loadingRef.current = loading; }, [loading]);
+  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
   useEffect(() => { onInputUpdateRef.current = onInputUpdate; }, [onInputUpdate]);
   useEffect(() => {
     if (onStateChange) onStateChange(isListeningState);
@@ -41,7 +43,7 @@ export default function SearchBar({ onSubmit, loading, onStateChange, onInputUpd
     };
 
     recognition.onresult = (event) => {
-      if (loadingRef.current) return;
+      if (loadingRef.current || isSpeakingRef.current) return;
 
       const results = Array.from(event.results);
       const lastResult = results[results.length - 1];
@@ -198,14 +200,14 @@ export default function SearchBar({ onSubmit, loading, onStateChange, onInputUpd
           marginBottom: '-10px',
           zIndex: 5
         }}>
-          {errorMsg ? errorMsg : (isWakeWordActive ? 'Say "Guru Ji"...' : 'Mic Inactive')}
+          {errorMsg ? errorMsg : isSpeaking ? "AI Speaking..." : (isWakeWordActive ? 'Say "Guru Ji"...' : 'Mic Inactive')}
         </div>
       )}
 
       <button
         onClick={manualToggle}
         className={`mic-btn ${isListeningState ? "recording" : ""}`}
-        disabled={loading || !!errorMsg}
+        disabled={loading || isSpeaking || !!errorMsg}
         title={errorMsg || "Wake Word / Manual"}
         style={{ position: 'relative' }}
       >

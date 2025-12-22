@@ -17,6 +17,7 @@ export default function App() {
   const [teacher, setTeacher] = useState("female");
   const [loading, setLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [view, setView] = useState("home");
 
   const [inputText, setInputText] = useState("");
@@ -42,9 +43,23 @@ export default function App() {
     };
     document.addEventListener("click", unlock);
     document.addEventListener("touchstart", unlock);
+
+    // --- AUDIO EVENT LISTENERS (Track Speaking State) ---
+    const handleStart = () => setIsSpeaking(true);
+    const handleEnd = () => setIsSpeaking(false);
+
+    audioEl.addEventListener("play", handleStart);
+    audioEl.addEventListener("playing", handleStart);
+    audioEl.addEventListener("ended", handleEnd);
+    audioEl.addEventListener("pause", handleEnd);
+
     return () => {
       document.removeEventListener("click", unlock);
       document.removeEventListener("touchstart", unlock);
+      audioEl.removeEventListener("play", handleStart);
+      audioEl.removeEventListener("playing", handleStart);
+      audioEl.removeEventListener("ended", handleEnd);
+      audioEl.removeEventListener("pause", handleEnd);
     };
   }, [audioEl]);
 
@@ -184,6 +199,7 @@ export default function App() {
             <div className="search-bar-container">
               <SearchBar
                 loading={loading}
+                isSpeaking={isSpeaking}
                 onStateChange={setIsRecording}
                 onInputUpdate={setInputText}
                 onSubmit={(text) => handleSubmitText(text)}
