@@ -44,7 +44,7 @@ function detectClip(actions, tags = []) {
 }
 
 /* ---------------- MODEL COMPONENT ---------------- */
-function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading, isMuted, reloadTrigger }) {
+function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading, isMuted, reloadTrigger, audioEl }) {
   const head = useRef();
 
   // 1. USE ORIGINAL SEPARATE FILES
@@ -70,7 +70,6 @@ function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading, is
 
   const { actions, mixer } = useAnimations(animations, modelScene);
 
-  const [audioEl, setAudioEl] = useState(null);
   const [realDuration, setRealDuration] = useState(0);
   const [state, setState] = useState("Idle");
 
@@ -94,22 +93,45 @@ function TeacherModel({ teacher, lipSyncData, audioUrl, isRecording, loading, is
 
   // --- Audio Setup ---
   useEffect(() => {
-    if (audioEl) { audioEl.pause(); audioEl.src = ""; }
     if (!audioUrl) {
+      audioEl.pause();
+      audioEl.src = "";
       setState((isRecording || loading) ? "Thinking" : "Idle");
       return;
     }
-    const a = new Audio(audioUrl);
-    a.onloadedmetadata = () => { if (a.duration) setRealDuration(a.duration); };
-    a.onplay = () => { if (!isRecording && !loading) setState("Talking"); };
-    a.onpause = () => { if (!isRecording && !loading) setState("Idle"); };
-    a.onended = () => { if (!isRecording && !loading) setState("Idle"); };
-    a.oncanplaythrough = () => {
-      if (!isMuted) a.play().catch(() => { });
+
+    // Reuse the same audio element
+    audioEl.pause();
+    audioEl.src = audioUrl;
+    audioEl.load();
+
+    const handleLoadedMetadata = () => { if (audioEl.duration) setRealDuration(audioEl.duration); };
+    const handlePlay = () => { if (!isRecording && !loading) setState("Talking"); };
+    const handlePause = () => { if (!isRecording && !loading) setState("Idle"); };
+    const handleEnded = () => { if (!isRecording && !loading) setState("Idle"); };
+    const handleCanPlayThrough = () => {
+      if (!isMuted) {
+        audioEl.play().catch(err => {
+          console.warn("Auto-play blocked or failed:", err);
+          // If blocked, the user can still click 'Reload' to play manually
+        });
+      }
     };
-    setAudioEl(a);
-    return () => { a.pause(); a.src = ""; };
-  }, [audioUrl, teacher]);
+
+    audioEl.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audioEl.addEventListener("play", handlePlay);
+    audioEl.addEventListener("pause", handlePause);
+    audioEl.addEventListener("ended", handleEnded);
+    audioEl.addEventListener("canplaythrough", handleCanPlayThrough);
+
+    return () => {
+      audioEl.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audioEl.removeEventListener("play", handlePlay);
+      audioEl.removeEventListener("pause", handlePause);
+      audioEl.removeEventListener("ended", handleEnded);
+      audioEl.removeEventListener("canplaythrough", handleCanPlayThrough);
+    };
+  }, [audioUrl, teacher, isMuted]);
 
   // --- Mute Logic ---
   useEffect(() => {
@@ -252,6 +274,7 @@ export default function ThreeScene(props) {
           {...props}
           isMuted={props.isMuted}
           reloadTrigger={props.reloadTrigger}
+          audioEl={props.audioEl}
         />
         <Environment preset="city" />
       </Suspense>

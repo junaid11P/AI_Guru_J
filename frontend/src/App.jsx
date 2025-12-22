@@ -28,6 +28,25 @@ export default function App() {
   const [lipSyncData, setLipSyncData] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
   const [reloadTrigger, setReloadTrigger] = useState(0);
+  const [audioEl] = useState(() => new Audio());
+
+  // --- AUDIO PRIMING (Unlock for Mobile/Auto-play) ---
+  useEffect(() => {
+    const unlock = () => {
+      audioEl.play().then(() => {
+        audioEl.pause();
+        audioEl.currentTime = 0;
+      }).catch(() => { });
+      document.removeEventListener("click", unlock);
+      document.removeEventListener("touchstart", unlock);
+    };
+    document.addEventListener("click", unlock);
+    document.addEventListener("touchstart", unlock);
+    return () => {
+      document.removeEventListener("click", unlock);
+      document.removeEventListener("touchstart", unlock);
+    };
+  }, [audioEl]);
 
   useEffect(() => {
     if (!explanation || loading || explanation === "Thinking...") {
@@ -120,15 +139,15 @@ export default function App() {
         <>
           <div className="top-right-selector">
             <div className="nav-controls">
-              <button 
-                className="nav-control-btn mute-btn" 
+              <button
+                className="nav-control-btn mute-btn"
                 onClick={() => setIsMuted(!isMuted)}
                 title={isMuted ? "Unmute" : "Mute"}
               >
                 {isMuted ? "🔈" : "🔊"}
               </button>
-              <button 
-                className="nav-control-btn reload-btn" 
+              <button
+                className="nav-control-btn reload-btn"
                 onClick={() => setReloadTrigger(prev => prev + 1)}
                 title="Reload Voice"
               >
@@ -156,6 +175,7 @@ export default function App() {
                 loading={loading}
                 isMuted={isMuted}
                 reloadTrigger={reloadTrigger}
+                audioEl={audioEl}
               />
             </div>
           </div>
