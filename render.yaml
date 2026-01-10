@@ -1,23 +1,22 @@
 services:
-  # Backend Service (Python/FastAPI)
+  # Backend Service (Docker)
   - type: web
     name: ai-guru-j-backend
-    env: python
+    env: docker
     region: ohio
     plan: free
-    buildCommand: |
-      cd backend
-      pip install -r requirements.txt
-    startCommand: |
-      cd backend
-      uvicorn app.main:app --host 0.0.0.0 --port 10000
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.9.13
       - key: LLM_PROVIDER
         value: groq
       - key: GROQ_API_KEY
         sync: false # User must enter this in Render Dashboard
+      - key: MONGODB_URI
+        sync: false # User must enter this in Render Dashboard
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: ai-guru-j-frontend
+          property: url
 
   # Frontend Service (Node/React)
   - type: web

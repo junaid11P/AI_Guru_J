@@ -1,26 +1,43 @@
+import subprocess
+import tempfile
 import json
+import os
 import io
-import time
+from app.config import settings
 
 def generate_lip_sync_json(audio_stream: io.BytesIO) -> dict:
-    """
-    MOCK FUNCTION: Simulates running the Rhubarb Lip Sync tool on the audio stream.
-    
-    In a real implementation, this function would:
-    1. Save the BytesIO stream to a temporary .wav or .ogg file.
-    2. Call the external `rhubarb` command-line tool with the file and dialog text.
-    3. Read the resulting JSON file containing timestamps and visemes (mouth shapes).
-    4. Return the JSON data.
-    """
-    # Placeholder JSON structure mimicking Rhubarb's output
-    mock_data = {
-        "metadata": {"version": 1},
-        "mouthCues": [
-            {"start": 0.00, "end": 0.15, "value": "A"}, # Closed
-            {"start": 0.15, "end": 0.35, "value": "C"}, # Wide open
-            {"start": 0.35, "end": 0.50, "value": "B"}, # Clenched
-            {"start": 0.50, "end": 0.60, "value": "X"}  # Closed
-        ]
-    }
-    print("MOCK: Rhubarb Lip Sync data generated.")
-    return mock_data
+    try:
+        # Save BytesIO to MP3
+        temp_mp3 = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+        temp_mp3.write(audio_stream.read())
+        temp_mp3.close()
+
+        # Convert MP3 → WAV
+        temp_wav = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+        temp_wav.close()
+        ffmpeg_cmd = [settings.FFMPEG_PATH, "-y", "-i", temp_mp3.name, temp_wav.name]
+        ffmpeg_proc = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
+        if ffmpeg_proc.returncode != 0:
+            return {"error": "FFmpeg failed", "details": ffmpeg_proc.stderr}
+
+        # Rhubarb
+        temp_json = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        temp_json.close()
+        rhubarb_cmd = [settings.RHUBARB_BINARY, temp_wav.name, "-o", temp_json.name, "-f", settings.RHUBARB_FORMAT]
+        rhubarb_proc = subprocess.run(rhubarb_cmd, capture_output=True, text=True)
+        if rhubarb_proc.returncode != 0:
+            return {"error": "Rhubarb failed", "details": rhubarb_proc.stderr}
+
+        # Load JSON
+        with open(temp_json.name, "r") as f:
+            data = json.load(f)
+
+        # Cleanup
+        os.remove(temp_mp3.name)
+        os.remove(temp_wav.name)
+        os.remove(temp_json.name)
+
+        return data
+
+    except Exception as e:
+        return {"error": str(e)}

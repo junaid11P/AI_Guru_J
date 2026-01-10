@@ -14,10 +14,12 @@ pip install -r requirements.txt
 ```
 
 2) Provide environment variables
-- Create a `.env` file in the `backend/` folder with placeholders (do NOT commit):
-```
-OPENAI_API_KEY="your_openai_key_here"
-MONGODB_URI="your_mongodb_uri_here"
+- Create a `.env` file in the `backend/` folder:
+```env
+GROQ_API_KEY="your_groq_api_key_here"
+MONGODB_URI="mongodb://localhost:27017/ai_guru_j_db"
+RHUBARB_BINARY="rhubarb"
+FFMPEG_PATH="ffmpeg"
 ```
 - Ensure `.env` is in `.gitignore`.
 

@@ -18,16 +18,25 @@ Once frontend is run, open this link in your browser.  http://localhost:5173/
 
 # Backend Setup:
 
-Start the server
-```bash
+1. **Install Dependencies**:
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   ```
 
-cd backend
-# from backend/ directory
+2. **Environment Variables**:
+   Create a `.env` file in the `backend/` directory:
+   ```env
+   GROQ_API_KEY="your_groq_api_key"
+   MONGODB_URI="mongodb://localhost:27017/ai_guru_j_db"
+   RHUBARB_BINARY="rhubarb"  # Path to your rhubarb binary
+   FFMPEG_PATH="ffmpeg"      # Path to your ffmpeg binary
+   ```
 
-pip install -r requirements.txt
-
-uvicorn app.main:app --reload
-```
+3. **Start the server**:
+   ```bash
+   uvicorn app.main:app --reload
+   ```
 
 
 # Open interactive docs
