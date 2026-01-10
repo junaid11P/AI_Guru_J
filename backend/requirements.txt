@@ -1,5 +1,5 @@
 fastapi
-uvicorn[standard]
+uvicorn
 python-multipart
 pymongo
 pydantic
@@ -9,4 +9,3 @@ gTTS
 python-dotenv
 groq
 requests
-google-genai
