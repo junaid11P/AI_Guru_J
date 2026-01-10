@@ -65,6 +65,10 @@ At the end, show the exact OUTPUT of the code.
 
         # Remove code block from explanation
         explanation_text = re.sub(code_pattern, "", ai_output, flags=re.DOTALL).strip()
+        
+        # EXTREME: Truncate to 400 chars to avoid large audio blobs
+        if len(explanation_text) > 400:
+            explanation_text = explanation_text[:400] + "..."
 
         return explanation_text, code_block
 

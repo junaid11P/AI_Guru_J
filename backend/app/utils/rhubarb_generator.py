@@ -17,9 +17,9 @@ def generate_lip_sync_json(mp3_path: str) -> dict:
         fd, temp_wav = tempfile.mkstemp(suffix=".wav")
         os.close(fd)
         
-        logger.info(f"🎞️ Converting {os.path.basename(mp3_path)} to downsampled WAV...")
+        logger.info(f"🎞️ Converting {os.path.basename(mp3_path)} to 8kHz WAV...")
         gc.collect() # Free memory before subprocess
-        ffmpeg_cmd = [settings.FFMPEG_PATH, "-y", "-i", mp3_path, "-ar", "16000", "-ac", "1", temp_wav]
+        ffmpeg_cmd = [settings.FFMPEG_PATH, "-y", "-i", mp3_path, "-ar", "8000", "-ac", "1", temp_wav]
         ffmpeg_proc = subprocess.run(ffmpeg_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if ffmpeg_proc.returncode != 0:
             logger.error("FFmpeg failed")
