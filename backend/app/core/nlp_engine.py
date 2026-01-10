@@ -43,6 +43,10 @@ At the end, show the exact OUTPUT of the code.
     model_id = settings.NLP_MODEL_ID
 
     try:
+        if provider == "groq" and "gemini" in model_id.lower():
+            logging.warning(f"Likely configuration error: Using Gemini model '{model_id}' with Groq provider.")
+            return "Configuration Error: Gemini models are not supported on Groq.", "# Update LLM_PROVIDER to 'gemini' or NLP_MODEL_ID to a Groq model (e.g., llama-3.1-8b-instant)"
+
         if provider == "gemini":
             if not settings.GEMINI_API_KEY:
                 return ("Config Error: GEMINI_API_KEY missing.",
