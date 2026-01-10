@@ -14,10 +14,10 @@ app = FastAPI(
 )
 
 # CORS setup
-origins = [
     "http://localhost:5173",
     "http://localhost:3000",
     "http://127.0.0.1:5173",
+    "https://aiguruj-s8fa.onrender.com",
 ]
 frontend_url = os.getenv("FRONTEND_URL")
 if frontend_url:
