@@ -39,7 +39,7 @@ async def startup_event():
     if not shutil.which(rhubarb_path):
         logging.warning(f"⚠️ Rhubarb binary not found in path: {rhubarb_path}")
 
-@app.get("/", methods=["GET", "HEAD"])
+@app.get("/")
 async def root():
     return {"message": "AI Guru J Backend is Live!"}
 

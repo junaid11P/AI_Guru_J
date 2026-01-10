@@ -1,7 +1,7 @@
 import logging
 import re
 from groq import Groq
-import google.generativeai as genai
+from google import genai
 from app.config import settings
 
 logging.basicConfig(level=logging.INFO)
@@ -48,11 +48,10 @@ At the end, show the exact OUTPUT of the code.
                 return ("Config Error: GEMINI_API_KEY missing.",
                         "# Set GEMINI_API_KEY in your .env or Render Dashboard")
             
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            model = genai.GenerativeModel(model_id)
+            client = genai.Client(api_key=settings.GEMINI_API_KEY)
             logging.info(f"Sending NLP request to Gemini model={model_id}")
             
-            response = model.generate_content(prompt_text)
+            response = client.models.generate_content(model=model_id, contents=prompt_text)
             ai_output = response.text
 
         elif provider == "groq":

@@ -9,4 +9,4 @@ gTTS
 python-dotenv
 groq
 requests
-google-generativeai
+google-genai
