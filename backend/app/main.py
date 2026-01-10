@@ -33,12 +33,13 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
+    import shutil
     mongodb_ops.initialize_db()
     rhubarb_path = os.getenv("RHUBARB_BINARY", "rhubarb")
-    if not os.path.exists(rhubarb_path):
-        logging.warning(f"⚠️ Rhubarb binary not found at {rhubarb_path}")
+    if not shutil.which(rhubarb_path):
+        logging.warning(f"⚠️ Rhubarb binary not found in path: {rhubarb_path}")
 
-@app.get("/")
+@app.get("/", methods=["GET", "HEAD"])
 async def root():
     return {"message": "AI Guru J Backend is Live!"}
 
