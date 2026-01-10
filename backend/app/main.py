@@ -19,10 +19,11 @@ origins = [
     "http://localhost:3000",
     "http://127.0.0.1:5173",
     "https://aiguruj-s8fa.onrender.com",
+    "https://aiguruj.onrender.com",
 ]
 frontend_url = os.getenv("FRONTEND_URL")
 if frontend_url:
-    origins.append(frontend_url)
+    origins.append(frontend_url.rstrip("/"))
 
 app.add_middleware(
     CORSMiddleware,
