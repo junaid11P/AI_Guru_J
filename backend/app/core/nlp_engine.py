@@ -1,14 +1,14 @@
 import logging
 import re
 from groq import Groq
+import google.generativeai as genai
 from app.config import settings
 
 logging.basicConfig(level=logging.INFO)
-GROQ_MODEL = settings.NLP_MODEL_ID or "llama-3.1-8b-instant"
 
 def get_ai_explanation(user_input: str, is_audio=False):
     """
-    Sends user input to Groq LLM and returns:
+    Sends user input to the configured LLM (Gemini or Groq) and returns:
     - explanation_text
     - code_block
     """
@@ -39,21 +39,39 @@ Do not add any intro or outro text.
 At the end, show the exact OUTPUT of the code.
 """
 
+    provider = settings.LLM_PROVIDER.lower()
+    model_id = settings.NLP_MODEL_ID
+
     try:
-        if not settings.GROQ_API_KEY:
-            return ("Config Error: GROQ_API_KEY missing.",
-                    "# Set GROQ_API_KEY in your .env or Render Dashboard")
+        if provider == "gemini":
+            if not settings.GEMINI_API_KEY:
+                return ("Config Error: GEMINI_API_KEY missing.",
+                        "# Set GEMINI_API_KEY in your .env or Render Dashboard")
+            
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            model = genai.GenerativeModel(model_id)
+            logging.info(f"Sending NLP request to Gemini model={model_id}")
+            
+            response = model.generate_content(prompt_text)
+            ai_output = response.text
 
-        client = Groq(api_key=settings.GROQ_API_KEY)
-        logging.info(f"Sending NLP request to Groq model={GROQ_MODEL}")
+        elif provider == "groq":
+            if not settings.GROQ_API_KEY:
+                return ("Config Error: GROQ_API_KEY missing.",
+                        "# Set GROQ_API_KEY in your .env or Render Dashboard")
 
-        completion = client.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=[{"role": "user", "content": prompt_text}],
-            temperature=0.3
-        )
+            client = Groq(api_key=settings.GROQ_API_KEY)
+            logging.info(f"Sending NLP request to Groq model={model_id}")
 
-        ai_output = completion.choices[0].message.content
+            completion = client.chat.completions.create(
+                model=model_id,
+                messages=[{"role": "user", "content": prompt_text}],
+                temperature=0.3
+            )
+            ai_output = completion.choices[0].message.content
+        
+        else:
+            return f"Unsupported provider: {provider}", "# Configuration Error"
 
         # Extract code block
         code_pattern = r"```(?:python)?\s*(.*?)\s*```"
