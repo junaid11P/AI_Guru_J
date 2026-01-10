@@ -32,22 +32,14 @@ async def handle_query(
         if not explanation_text:
             explanation_text = "I'm sorry, I couldn't process that request."
 
-        # Generate TTS audio (WAV for Rhubarb)
-        audio_path = await generate_speech(explanation_text, gender=teacher_gender, wav_output=True)
-
-        # Read WAV into BytesIO
-        with open(audio_path, "rb") as f:
-            audio_bytes = io.BytesIO(f.read())
-
-        # Generate real lip-sync JSON
-        lip_sync_data = generate_lip_sync_json(audio_bytes)
-
-        # Generate MP3 URL for frontend streaming
+        # 1. Generate speech ONCE (Returns MP3 path)
         mp3_path = await generate_speech(explanation_text, gender=teacher_gender)
-        audio_url = f"{settings.BASE_URL}/api/tutor/audio_stream/?file_path={mp3_path}"
 
-        # Cleanup (Only WAV, MP3 is cleaned after streaming)
-        background_tasks.add_task(remove_file, audio_path)
+        # 2. Generate lip-sync (Passes MP3 path)
+        lip_sync_data = generate_lip_sync_json(mp3_path)
+
+        # 3. Build audio URL (Using the SAME MP3)
+        audio_url = f"{settings.BASE_URL}/api/tutor/audio_stream/?file_path={mp3_path}"
 
         # Log interaction
         background_tasks.add_task(

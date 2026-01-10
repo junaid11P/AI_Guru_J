@@ -43,12 +43,12 @@ def generate_tiktok_audio(text: str, voice: str) -> str:
         logger.error(f"TikTok TTS Failed: {e}")
     return None
 
-async def generate_speech(text_to_speak: str, gender: str = "female", wav_output: bool = False) -> str:
+async def generate_speech(text_to_speak: str, gender: str = "female") -> str:
     if not text_to_speak:
         raise ValueError("Empty text provided")
     
     clean_text = clean_text_for_speech(text_to_speak)
-    logger.info(f"🎤 Synthesizing ({gender}): '{clean_text[:30]}...'")
+    logger.info(f"🎤 Synthesizing ({gender}): '{clean_text[:40]}...'")
 
     tiktok_voice = TIKTOK_VOICES.get(gender, "en_us_001")
     path = generate_tiktok_audio(clean_text, tiktok_voice)
@@ -60,17 +60,5 @@ async def generate_speech(text_to_speak: str, gender: str = "female", wav_output
         os.close(fd)
         tts = gTTS(text=clean_text, lang='en', slow=False)
         tts.save(path)
-
-    # Convert to WAV if needed
-    if wav_output:
-        fd, wav_path = tempfile.mkstemp(suffix=".wav")
-        os.close(fd)
-        ffmpeg_cmd = [settings.FFMPEG_PATH, "-y", "-i", path, wav_path]
-        proc = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
-        if proc.returncode != 0:
-            logger.error(f"FFmpeg conversion failed: {proc.stderr}")
-            raise RuntimeError("FFmpeg conversion failed")
-        os.remove(path)
-        path = wav_path
 
     return path
