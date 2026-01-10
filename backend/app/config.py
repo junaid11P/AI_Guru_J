@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str | None = None
 
     # UPDATED: Use the model explicitly listed in your terminal
-    NLP_MODEL_ID: str = "gemini-2.5-flash"
+    NLP_MODEL_ID: str = "gemini-1.5-flash"
     MAX_TOKENS: int = 1024
     
     # Provider: 'groq' (Cloud/Render)
