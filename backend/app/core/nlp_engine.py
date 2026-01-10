@@ -34,6 +34,8 @@ Line X: actual code - simple explanation.
 
 Use very simple English (3rd grade level).
 
+IMPORTANT: Keep the explanation EXTREMELY concise. Maximum 3 bullet points.
+
 Do not add any intro or outro text.
 
 At the end, show the exact OUTPUT of the code.
@@ -69,7 +71,8 @@ At the end, show the exact OUTPUT of the code.
             completion = client.chat.completions.create(
                 model=model_id,
                 messages=[{"role": "user", "content": prompt_text}],
-                temperature=0.3
+                temperature=0.3,
+                max_tokens=settings.MAX_TOKENS # Ensure this is respected
             )
             ai_output = completion.choices[0].message.content
         

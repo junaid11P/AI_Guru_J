@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     # UPDATED: Use a valid Groq model ID
     NLP_MODEL_ID: str = "llama-3.1-8b-instant"
-    MAX_TOKENS: int = 1024
+    MAX_TOKENS: int = 512
     
     # Provider: 'groq' or 'gemini'
     LLM_PROVIDER: str = "groq"

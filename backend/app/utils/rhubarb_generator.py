@@ -4,6 +4,7 @@ import json
 import os
 import io
 import logging
+import gc
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -17,22 +18,24 @@ def generate_lip_sync_json(mp3_path: str) -> dict:
         os.close(fd)
         
         logger.info(f"🎞️ Converting {os.path.basename(mp3_path)} to downsampled WAV...")
+        gc.collect() # Free memory before subprocess
         ffmpeg_cmd = [settings.FFMPEG_PATH, "-y", "-i", mp3_path, "-ar", "16000", "-ac", "1", temp_wav]
-        ffmpeg_proc = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
+        ffmpeg_proc = subprocess.run(ffmpeg_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if ffmpeg_proc.returncode != 0:
-            logger.error(f"FFmpeg failed: {ffmpeg_proc.stderr}")
-            return {"error": "FFmpeg failed", "details": ffmpeg_proc.stderr}
+            logger.error("FFmpeg failed")
+            return {"error": "FFmpeg failed"}
 
         # 2. Run Rhubarb
         fd, temp_json = tempfile.mkstemp(suffix=".json")
         os.close(fd)
         
         logger.info("👄 Generating lip-sync data with Rhubarb...")
+        gc.collect() # Free memory before subprocess
         rhubarb_cmd = [settings.RHUBARB_BINARY, temp_wav, "-o", temp_json, "-f", settings.RHUBARB_FORMAT]
-        rhubarb_proc = subprocess.run(rhubarb_cmd, capture_output=True, text=True)
+        rhubarb_proc = subprocess.run(rhubarb_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if rhubarb_proc.returncode != 0:
-            logger.error(f"Rhubarb failed: {rhubarb_proc.stderr}")
-            return {"error": "Rhubarb failed", "details": rhubarb_proc.stderr}
+            logger.error("Rhubarb failed")
+            return {"error": "Rhubarb failed"}
 
         # 3. Load & Return JSON
         with open(temp_json, "r") as f:
