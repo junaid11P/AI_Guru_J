@@ -1,7 +1,6 @@
 import logging
 import re
 from groq import Groq
-from groq import Groq
 from app.config import settings
 
 logging.basicConfig(level=logging.INFO)
@@ -58,9 +57,6 @@ At the end, show the exact OUTPUT of the code.
             max_tokens=settings.MAX_TOKENS
         )
         ai_output = completion.choices[0].message.content
-        
-        else:
-            return f"Unsupported provider: {provider}", "# Configuration Error"
 
         # Extract code block
         code_pattern = r"```(?:python)?\s*(.*?)\s*```"
