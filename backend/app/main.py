@@ -5,6 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import mongodb_ops
 from app.api.tutor_router import router as tutor_router
+import logging
+import os
 
 # Set up basic logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
