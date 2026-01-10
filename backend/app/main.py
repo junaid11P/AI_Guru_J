@@ -3,7 +3,6 @@ load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.database import mongodb_ops
 from app.api.tutor_router import router as tutor_router
 import logging
 import os
@@ -30,7 +29,6 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     import shutil
-    mongodb_ops.initialize_db()
     rhubarb_path = os.getenv("RHUBARB_BINARY", "rhubarb")
     if not shutil.which(rhubarb_path):
         logging.warning(f"⚠️ Rhubarb binary not found in path: {rhubarb_path}")

@@ -7,7 +7,6 @@ import io
 from app.core.speech_synth import generate_speech
 from app.core.nlp_engine import get_ai_explanation
 from app.utils.rhubarb_generator import generate_lip_sync_json
-from app.database.mongodb_ops import log_interaction
 from app.config import settings
 
 router = APIRouter()
@@ -41,15 +40,7 @@ async def handle_query(
         # 3. Build audio URL (Using the SAME MP3)
         audio_url = f"{settings.BASE_URL}/api/tutor/audio_stream/?file_path={mp3_path}"
 
-        # Log interaction
-        background_tasks.add_task(
-            log_interaction,
-            text_query,
-            explanation_text,
-            code_block,
-            lip_sync_data,
-            audio_url
-        )
+        audio_url = f"{settings.BASE_URL}/api/tutor/audio_stream/?file_path={mp3_path}"
 
         logger.info("✅ Query processed successfully.")
         return {
