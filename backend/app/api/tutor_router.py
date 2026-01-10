@@ -26,6 +26,7 @@ async def handle_query(
     text_query: str = Form(...),
     teacher_gender: str = Form("female")
 ):
+    logger.info(f"🚀 Received query: '{text_query[:50]}...' [Gender: {teacher_gender}]")
     try:
         explanation_text, code_block = get_ai_explanation(text_query)
         if not explanation_text:
@@ -58,6 +59,7 @@ async def handle_query(
             audio_url
         )
 
+        logger.info("✅ Query processed successfully.")
         return {
             "user_query": text_query,
             "explanation": explanation_text,
