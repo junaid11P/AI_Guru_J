@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pymongo
+pydantic
+pydantic-settings
+dnspython
+gTTS 
+python-dotenv
+groq
+requests
