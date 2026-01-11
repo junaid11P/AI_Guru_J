@@ -16,7 +16,7 @@ def initialize_db(mongo_uri: Optional[str] = None, server_selection_ms: int = 50
     global _client, _db, _initialized
 
     if _initialized:
-        return True
+        return True 
 
     uri = mongo_uri or os.getenv("MONGODB_URI", "").strip()
     if not uri:
