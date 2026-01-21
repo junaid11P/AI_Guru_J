@@ -59,14 +59,4 @@ curl -X POST "http://127.0.0.1:8000/api/tutor/query/" \
 curl http://127.0.0.1:8000/api/tutor/audio_stream/ --output response.mp3
 ```
 
-
-
-# Run project tests / helper scripts
-```bash
-
-cd backend
-# if test_api.py is provided and executable
-python test_api.py
-# or, if you use pytest
-pytest
 ```
