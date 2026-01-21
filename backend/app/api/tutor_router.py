@@ -1,7 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Form, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
 import logging
-import shutil
 import os
 import random
 from urllib.parse import quote_plus
