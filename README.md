@@ -1,11 +1,18 @@
-# AI_Guru_J
-This is Our  final Year Project
-members:
+# AI Guru J - Interactive Python Tutor
+
+AI Guru J is an interactive, AI-powered Python tutoring platform designed for beginners and kids. It features a 3D avatar that speaks and explains Python code in real-time.
+
+## Navigation
+- [System Architecture](SYSTEM_ARCHITECTURE.md)
+- [Backend Documentation](backend/README.md)
+
+## Team Members
 1. Vishnu Premarajan
-2. Mohammed Ijas p
+2. Mohammed Ijas P
 3. Eshan Fadil
 4. Juned
 
+---
 
 # Frontend Setup:
 ```bash
