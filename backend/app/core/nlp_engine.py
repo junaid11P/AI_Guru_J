@@ -29,7 +29,7 @@ def get_ai_explanation(user_input):
         "- If the code is just one line, offer ONLY one explanation for that line. DO NOT repeat explanations or add filler lines.\n"
         "- Use simple words and daily-life analogies (toys, school, etc.) that a young child can understand.\n"
         "- Keep sentences very short and avoid any intro or outro text (e.g., 'Sure!', 'Let's begin').\n"
-        "-At the very end, show the exact OUTPUT of the code.\n"
+        "- **COMPULSORY**: At the very end, add a section called '### Output' and show what the code prints as plain text. DO NOT use code blocks (```) for the output.\n\n"
         
         "Structure:\n"
         "### The Code\n"
@@ -37,8 +37,9 @@ def get_ai_explanation(user_input):
         "# your code\n"
         "```\n\n"
         "### Explanation\n"
-        "- **Line X**: `code` - Simple explanation here.\n"
-        
+        "- **Line X**: `code` - Simple explanation here.\n\n"
+        "### Output\n"
+        "The result of the code goes here as plain text.\n"
     )
 
 
