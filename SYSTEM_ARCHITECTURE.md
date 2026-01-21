@@ -18,7 +18,7 @@ graph TD
     subgraph Backend [Backend - FastAPI]
         API[Tutor API Router]
         NLP[NLP Engine - Groq]
-        TTS[Speech Synth - Edge TTS]
+        TTS[Speech Synth - TikTok / gTTS]
         Sync[Lip-Sync Generator]
         DB_Ops[MongoDB Ops]
     end
@@ -75,7 +75,7 @@ The backend acts as an orchestrator, connecting the frontend with various AI eng
     3. Triggers TTS and Lip-Sync generation.
     4. Logs the interaction to the database.
 - **`core/nlp_engine.py`**: Interacts with the **Groq Cloud API** (using `llama-3.1-8b-instant`). It uses a specialized prompt to ensure the output is suitable for children (Python Tutor persona).
-- **`core/speech_synth.py`**: Uses **Edge TTS** to generate high-quality speech. It returns a streaming audio URL or a temporary file path.
+- **`core/speech_synth.py`**: Uses **TikTok TTS** to generate characteristic voices, with **gTTS (Google TTS)** as a fallback. It returns a temporary file path for the audio.
 - **`utils/rhubarb_generator.py`**: (Or internal mock) Generates mouth cues (lip-sync data) based on the generated text to drive the 3D avatar's mouth.
 - **`database/mongodb_ops.py`**: Handles asynchronous logging of interactions to **MongoDB Atlas** for history and analytics.
 
@@ -88,7 +88,7 @@ The backend acts as an orchestrator, connecting the frontend with various AI eng
 3.  **Request**: Frontend sends a POST request to `/api/tutor/query/`.
 4.  **Processing**:
     - **NLP**: Backend sends the query to **Groq**. Groq returns Code + Explanation.
-    - **TTS**: Backend (or via separate stream) generates an MP3 using **Edge TTS**.
+    - **TTS**: Backend (or via separate stream) generates an MP3 using **TikTok TTS** (falling back to **gTTS** if needed).
     - **Lip-Sync**: Backend calculates mouth cues for the generated response.
 5.  **Response**: Backend returns a JSON object containing:
     - Code segment.
@@ -109,7 +109,7 @@ The backend acts as an orchestrator, connecting the frontend with various AI eng
 | **Frontend** | React, Vite, Three.js, R3F, Web Speech API |
 | **Backend** | Python, FastAPI, Uvicorn |
 | **AI / NLP** | Groq Cloud (Llama 3.1) |
-| **TTS** | Edge TTS |
+| **TTS** | TikTok TTS & gTTS |
 | **Database** | MongoDB Atlas |
 | **Deployment** | Render (Web Service + Static Site) |
 
