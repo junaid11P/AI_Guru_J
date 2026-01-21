@@ -74,7 +74,7 @@ async def handle_query(
         if text_query:
             user_query_for_log = text_query.strip()
             # Standard Text Query (or Transcribed Text)
-            explanation_text, code_block = get_ai_explanation(user_query_for_log, is_audio=False)
+            explanation_text, code_block = get_ai_explanation(user_query_for_log)
             
         else:
             raise HTTPException(status_code=400, detail="No input provided.")

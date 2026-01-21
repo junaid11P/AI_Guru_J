@@ -1,7 +1,6 @@
 import logging
 import re
 from groq import Groq
-import os
 from .config import settings
 
 logging.basicConfig(level=logging.INFO)
@@ -9,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 # Configuration
 GROQ_MODEL = "llama-3.1-8b-instant" # Updated to supported model
 
-def get_ai_explanation(user_input, is_audio=False):
+def get_ai_explanation(user_input):
     """
     Accepts Text (str).
     Routes to Groq (Cloud).

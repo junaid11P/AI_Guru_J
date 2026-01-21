@@ -1,6 +1,4 @@
-import json
 import io
-import time
 
 def generate_lip_sync_json(audio_stream: io.BytesIO) -> dict:
     """
